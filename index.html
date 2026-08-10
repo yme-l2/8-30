@@ -237,6 +237,10 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <span>6. 全選手戦績管理(非公開)</span>
 <i class="fa-solid fa-chevron-right text-[10px]"></i>
 </button>
+<button id="admin-btn-reset" onclick="switchAdminSubTab('reset')" class="admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-white/5 hover:bg-white/10 text-red-400 transition flex items-center justify-between border border-red-500/20">
+<span>7. データリセット</span>
+<i class="fa-solid fa-chevron-right text-[10px]"></i>
+</button>
 </div>
 
 <!-- Admin Control Panels -->
@@ -335,9 +339,31 @@ to { transform: translate(-50%, 0); opacity: 1; }
 </tr>
 </thead>
 <tbody id="admin-players-tbody" class="divide-y divide-white/5">
-<!-- Loaded dynamically -->
+<!-- Loaded -->
 </tbody>
 </table>
+</div>
+</div>
+
+<!-- SUB-SECTION 7: Dedicated Reset Menu -->
+<div id="admin-sub-reset" class="admin-view-block hidden glass-card rounded-2xl p-6 space-y-6 max-w-xl mx-auto text-center">
+<div class="inline-flex p-4 rounded-full bg-red-500/10 text-red-400 mb-1">
+<i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+</div>
+<h3 class="text-md font-black text-gray-100">データリセット専用パネル</h3>
+<p class="text-xs text-gray-400 leading-relaxed">
+どのリセットを実行した場合でも、<strong class="text-amber-400">チーム名とチームメンバーは絶対に消去されません</strong>のでご安心ください。
+</p>
+<div class="space-y-3 pt-2">
+<button onclick="resetBlockMatchesOnly('A')" class="w-full py-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-300 font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-2">
+<i class="fa-solid fa-eraser"></i> Aブロックのスコア・戦績のみリセット
+</button>
+<button onclick="resetBlockMatchesOnly('B')" class="w-full py-3 bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-300 font-bold text-xs rounded-xl transition shadow-md flex items-center justify-center gap-2">
+<i class="fa-solid fa-eraser"></i> Bブロックのスコア・戦績のみリセット
+</button>
+<button onclick="resetScoresOnly()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+<i class="fa-solid fa-rotate-right"></i> 全ブロック（予選・決勝）のスコア・戦績を一括リセット
+</button>
 </div>
 </div>
 </div>
@@ -436,7 +462,7 @@ timeSlots: [
 '17:05〜17:20' // 決勝
 ],
 teams: {
-"あめっこ桜牛乳〜うちらダイス集めなんで(笑)": ["ゆら桜牛乳", "ゆり桜牛乳", "inゃこ桜牛乳".replace('in', 'に')],
+"あめっこ桜牛乳〜うちらダイス集めなんで(笑)": ["ゆら桜牛乳", "ゆり桜牛乳", "にゃこ桜牛乳"],
 "金魂": ["凸守あ", "温だるま", "即死@2度P"],
 "梅汁酔い": ["ラグで画面酔い", "秋月梅男", "生果汁原液"],
 "野良①": ["しぶき", "ちあき", "南京錠破壊"],
@@ -491,10 +517,25 @@ let adminPlayerSortKey = 'avgEvaluation';
 let adminPlayerSortOrder = 'desc';
 
 window.onload = function() {
-const saved = localStorage.getItem('dodgeball_kansei_v8');
+const saved = localStorage.getItem('dodgeball_kansei_v11');
 if (saved) {
 try {
-appState = JSON.parse(saved);
+const parsed = JSON.parse(saved);
+if (parsed.teams && Object.keys(parsed.teams).length > 0) {
+appState.teams = parsed.teams;
+}
+if (parsed.blocks && parsed.blocks.A && parsed.blocks.B) {
+appState.blocks = parsed.blocks;
+}
+if (parsed.timeSlots) {
+appState.timeSlots = parsed.timeSlots;
+}
+if (parsed.qualifierMatches) {
+appState.qualifierMatches = parsed.qualifierMatches;
+}
+if (parsed.finalMatches) {
+appState.finalMatches = parsed.finalMatches;
+}
 } catch (e) {
 setupSchedule();
 }
@@ -505,7 +546,37 @@ renderAll();
 };
 
 function saveToStorage() {
-localStorage.setItem('dodgeball_kansei_v8', JSON.stringify(appState));
+localStorage.setItem('dodgeball_kansei_v11', JSON.stringify(appState));
+}
+
+// チーム名とメンバーは消さずに、すべての試合のスコア・戦績のみを一括リセットする関数
+function resetScoresOnly() {
+if (confirm('登録されているチーム・メンバーはそのまま残し、入力したすべての試合スコアや個人スタッツをリセットしますか？')) {
+setupSchedule();
+saveToStorage();
+renderAll();
+showToast('すべての試合スコアとスタッツを初期化しました！');
+}
+}
+
+// 指定したブロック（AまたはB）のスコア・戦績のみをリセットする関数
+function resetBlockMatchesOnly(targetBlock) {
+if (confirm(`${targetBlock}ブロックのスコア・戦績のみをリセットしますか？（チーム名や他ブロックは保持されます）`)) {
+appState.qualifierMatches.forEach(m => {
+if (m.block === targetBlock) {
+m.s1 = null;
+m.s2 = null;
+m.ded1 = 0;
+m.ded2 = 0;
+m.playerStats = {};
+}
+});
+// 決勝トーナメントもリセット
+resetFinals();
+saveToStorage();
+renderAll();
+showToast(`${targetBlock}ブロックのスコアをリセットしました！`);
+}
 }
 
 function setupSchedule() {
@@ -538,8 +609,8 @@ appState.qualifierMatches.push({
 id: idCounter++,
 round: r,
 block: 'A',
-t1: appState.blocks.A[pair[0]],
-t2: appState.blocks.A[pair[1]],
+t1: appState.blocks.A[pair[0]] || '未登録',
+t2: appState.blocks.A[pair[1]] || '未登録',
 s1: null,
 s2: null,
 ded1: 0,
@@ -552,8 +623,8 @@ appState.qualifierMatches.push({
 id: idCounter++,
 round: r,
 block: 'B',
-t1: appState.blocks.B[pair[0]],
-t2: appState.blocks.B[pair[1]],
+t1: appState.blocks.B[pair[0]] || '未登録',
+t2: appState.blocks.B[pair[1]] || '未登録',
 s1: null,
 s2: null,
 ded1: 0,
@@ -563,7 +634,6 @@ playerStats: {}
 });
 }
 resetFinals();
-saveToStorage();
 }
 
 function resetFinals() {
@@ -965,7 +1035,6 @@ const f = appState.finalMatches;
 const aHasPlayed = aRes.some(s => s.hasPlayed);
 const bHasPlayed = bRes.some(s => s.hasPlayed);
 
-// 予選スコアが未入力の間はプレースホルダーのみを表示
 if (!aHasPlayed && !bHasPlayed) {
 f.semi1.name1 = 'Aブロック 1位 (シード)';
 f.semi2.name1 = 'Bブロック 1位 (シード)';
