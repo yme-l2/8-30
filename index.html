@@ -1,0 +1,1586 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>避球杯 オフィシャル運営管理システム</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Google Fonts Inter & Noto Sans JP -->
+<link href="https://fonts.googleapis.com/css?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<!-- FontAwesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+--bg-gradient: linear-gradient(135deg, #0d0614, #120920, #06020b);
+--glass-bg: rgba(255, 255, 255, 0.03);
+--glass-border: rgba(255, 255, 255, 0.07);
+}
+body {
+font-family: 'Inter', 'Noto Sans JP', sans-serif;
+background: var(--bg-gradient);
+background-attachment: fixed;
+color: #f3f4f6;
+}
+.glass-card {
+background: var(--glass-bg);
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
+border: 1px solid var(--glass-border);
+box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+}
+.custom-scrollbar::-webkit-scrollbar {
+width: 6px;
+height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+background: rgba(0, 0, 0, 0.3);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+background: rgba(255, 255, 255, 0.12);
+border-radius: 999px;
+}
+.toast-enter {
+animation: slideInUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes slideInUp {
+from { transform: translate(-50%, 2rem); opacity: 0; }
+to { transform: translate(-50%, 0); opacity: 1; }
+}
+</style>
+</head>
+<body class="min-h-screen pb-28">
+
+<header class="relative overflow-hidden pt-10 pb-8 border-b border-white/5 bg-black/40 text-center">
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.05)_0%,transparent_75%)] pointer-events-none"></div>
+<div class="relative z-10 max-w-4xl mx-auto px-4">
+<div class="text-xs tracking-widest text-[#ff9f43] font-bold uppercase mb-1.5">
+<i class="fa-solid fa-trophy"></i> 避球杯オフィシャル運営管理システム
+</div>
+<h1 class="text-4xl md:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-400 to-purple-400 mb-3">
+避球杯
+</h1>
+<div class="inline-flex items-center gap-2 bg-purple-950/40 border border-purple-500/20 px-4 py-1.5 rounded-full text-xs text-gray-300 font-semibold shadow-inner">
+<span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+<span id="header-schedule-badge">開催スケジュール: 14:30 開始</span>
+</div>
+</div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-8">
+
+<!-- HOME SECTION -->
+<section id="section-home" class="page-section active block">
+<div class="glass-card rounded-2xl p-6">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 border-b border-white/5 pb-4">
+<h3 class="text-lg font-bold text-gray-100 flex items-center gap-2">
+<i class="fa-solid fa-calendar-day text-[#ff9f43]"></i> タイムテーブル(予選並行/決勝順次進行)
+</h3>
+<span class="text-[10px] bg-white/5 border border-white/10 px-3 py-1 rounded text-gray-400">予選:2ブロック同時進行 / 準々決勝以降:完全単一進行</span>
+</div>
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full min-w-[650px] text-left border-collapse">
+<thead>
+<tr class="border-b border-white/10 bg-white/[0.02]">
+<th class="py-3 px-3 text-xs text-[#ff9f43] font-bold tracking-wider w-[120px] text-center">時間枠</th>
+<th class="py-3 px-3 text-xs text-[#ff9f43] font-bold tracking-wider text-center">Aブロック</th>
+<th class="py-3 px-3 text-xs text-[#ff9f43] font-bold tracking-wider text-center">Bブロック</th>
+</tr>
+</thead>
+<tbody id="global-timetable-tbody" class="divide-y divide-white/5">
+<!-- Generated via JS -->
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<!-- TEAMS SECTION -->
+<section id="section-teams" class="page-section hidden">
+<div class="flex items-center gap-3 mb-6">
+<h2 class="text-2xl font-black text-gray-100"><i class="fa-solid fa-users text-[#ff9f43]"></i> 参加チーム・メンバー紹介</h2>
+</div>
+<div class="glass-card rounded-2xl p-6">
+<div id="teams-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+<!-- Dynamic team grid -->
+</div>
+</div>
+</section>
+
+<!-- QUALIFIERS LEAGUE SECTION -->
+<section id="section-qualifiers" class="page-section hidden">
+<div class="flex items-center justify-between flex-wrap gap-4 mb-6">
+<h2 class="text-2xl font-black text-gray-100"><i class="fa-solid fa-volleyball text-[#ff9f43]"></i> 予選リーグ星取・順位</h2>
+<div class="flex bg-black/45 p-1 border border-white/10 rounded-xl gap-1">
+<button id="tab-q-A" onclick="switchQualifierBlock('A')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-white bg-[#ff9f43]">Aブロック</button>
+<button id="tab-q-B" onclick="switchQualifierBlock('B')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white">Bブロック</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Rankings -->
+<div class="lg:col-span-1 glass-card rounded-2xl p-5">
+<h3 class="text-sm font-bold text-gray-300 mb-4 flex items-center gap-1.5 border-b border-white/5 pb-2">
+<i class="fa-solid fa-list-ol text-amber-500"></i> ブロック内ランキング
+</h3>
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-xs">
+<thead>
+<tr class="border-b border-white/10 text-gray-400">
+<th class="py-2 font-bold w-10 text-center">順位</th>
+<th class="py-2 text-left">チーム名</th>
+<th class="py-2 font-bold w-12 text-center">勝数</th>
+<th class="py-2 text-right w-16">得失点均</th>
+<th class="py-2 text-right w-16">演繹点均</th>
+</tr>
+</thead>
+<tbody id="ranking-tbody" class="divide-y divide-white/5">
+<!-- Dynamically updated -->
+</tbody>
+</table>
+</div>
+</div>
+<!-- Block matches list -->
+<div class="lg:col-span-2 glass-card rounded-2xl p-5">
+<h3 class="text-sm font-bold text-gray-300 mb-4 flex items-center gap-1.5 border-b border-white/5 pb-2">
+<i class="fa-solid fa-trophy text-[#ff9f43]"></i> 対戦スコア一覧
+</h3>
+<div id="results-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Dynamically populated -->
+</div>
+</div>
+</div>
+</section>
+
+<!-- LEADERBOARD SECTION -->
+<section id="section-leaderboard" class="page-section hidden">
+<div class="flex items-center gap-3 mb-6">
+<h2 class="text-2xl font-black text-gray-100"><i class="fa-solid fa-medal text-amber-400"></i> 個人成績ベスト8(一般公開)</h2>
+</div>
+<div class="glass-card rounded-2xl p-6">
+<p class="text-xs text-gray-400 mb-4">※予選結果のみから算出された「平均評価」が高い上位8名のランキングです。</p>
+<div id="global-leaderboard-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+<!-- Populated dynamically -->
+</div>
+</div>
+</section>
+
+<!-- TOURNAMENT BRACKET SECTION -->
+<section id="section-tournament" class="page-section hidden">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-2xl font-black text-gray-100"><i class="fa-solid fa-sitemap text-purple-400"></i> 決勝トーナメント</h2>
+<span class="text-xs bg-purple-500/10 border border-purple-500/20 text-purple-300 font-bold px-3 py-1 rounded-full">
+上位3チーム進出 (1位シード)
+</span>
+</div>
+<div id="tournament-view-container" class="space-y-6">
+<!-- Rendered dynamically by JS -->
+</div>
+</section>
+
+<!-- RESULTS/AWARDS SECTION -->
+<section id="section-results" class="page-section hidden">
+<div class="flex items-center gap-3 mb-6">
+<h2 class="text-2xl font-black text-gray-100"><i class="fa-solid fa-crown text-amber-400"></i> 最終表彰・結果</h2>
+</div>
+<div class="glass-card rounded-3xl p-8 max-w-2xl mx-auto shadow-2xl relative overflow-hidden" id="final-results-container">
+<!-- Championship status screen -->
+</div>
+</section>
+
+<!-- ADMIN CONSOLE SECTION -->
+<section id="section-admin" class="page-section hidden">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-2xl font-black text-gray-100"><i class="fa-solid fa-lock text-red-400"></i> 運営管理パネル</h2>
+<div id="admin-status-badge" class="hidden text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold px-3 py-1 rounded-full">認証済み管理者</div>
+</div>
+
+<!-- Masked Login View -->
+<div id="admin-login-box" class="glass-card rounded-2xl p-8 max-w-md mx-auto text-center space-y-4">
+<div class="inline-flex p-4 rounded-full bg-orange-500/10 text-[#ff9f43] mb-2">
+<i class="fa-solid fa-shield-halved text-3xl"></i>
+</div>
+<h3 class="text-lg font-bold">管理者アクセス認証</h3>
+<p class="text-xs text-gray-400">設定、チーム登録、ブロック配置、各試合スコアや全選手データの編集を行います。</p>
+<div class="space-y-3">
+<input type="password" id="admin-password" class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2.5 text-center text-sm text-white font-mono focus:outline-none focus:border-orange-500" placeholder="管理者パスワードを入力">
+<button onclick="loginAdmin()" class="w-full bg-[#ff9f43] hover:opacity-90 text-black font-extrabold py-2.5 rounded-xl text-sm transition shadow-lg">認証する</button>
+</div>
+</div>
+
+<!-- Authenticated Control Console -->
+<div id="admin-panel" class="hidden space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<!-- Admin Sidebar Navigation -->
+<div class="md:col-span-1 space-y-2">
+<button id="admin-btn-teams" onclick="switchAdminSubTab('teams')" class="admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-[#ff9f43] text-black transition flex items-center justify-between">
+<span>1. チーム・メンバー登録</span>
+<i class="fa-solid fa-chevron-right text-[10px]"></i>
+</button>
+<button id="admin-btn-blocks" onclick="switchAdminSubTab('blocks')" class="admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-white/5 hover:bg-white/10 text-gray-300 transition flex items-center justify-between">
+<span>2. ブロック配置管理</span>
+<i class="fa-solid fa-chevron-right text-[10px]"></i>
+</button>
+<button id="admin-btn-times" onclick="switchAdminSubTab('times')" class="admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-white/5 hover:bg-white/10 text-gray-300 transition flex items-center justify-between">
+<span>3. タイムテーブル編集</span>
+<i class="fa-solid fa-chevron-right text-[10px]"></i>
+</button>
+<button id="admin-btn-matches" onclick="switchAdminSubTab('matches')" class="admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-white/5 hover:bg-white/10 text-gray-300 transition flex items-center justify-between">
+<span>4. 予選スコア入力</span>
+<i class="fa-solid fa-chevron-right text-[10px]"></i>
+</button>
+<button id="admin-btn-final" onclick="switchAdminSubTab('final')" class="admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-white/5 hover:bg-white/10 text-gray-300 transition flex items-center justify-between">
+<span>5. 決勝スコア入力</span>
+<i class="fa-solid fa-chevron-right text-[10px]"></i>
+</button>
+<button id="admin-btn-allstats" onclick="switchAdminSubTab('allstats')" class="admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-white/5 hover:bg-white/10 text-gray-300 transition flex items-center justify-between">
+<span>6. 全選手戦績管理(非公開)</span>
+<i class="fa-solid fa-chevron-right text-[10px]"></i>
+</button>
+</div>
+
+<!-- Admin Control Panels -->
+<div class="md:col-span-3">
+<!-- SUB-SECTION 1: Bulk Registration -->
+<div id="admin-sub-teams" class="admin-view-block glass-card rounded-2xl p-5 space-y-4">
+<h3 class="text-sm font-bold text-gray-200 border-b border-white/5 pb-2">チーム・メンバー一括登録</h3>
+<p class="text-xs text-gray-400 leading-relaxed">
+1行目に「チーム名」、2行目以降に「メンバー名」を入力してください。チーム間は「空行」で区切ります。
+</p>
+<textarea id="teamInputTextarea" rows="12" class="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-purple-500 custom-scrollbar"></textarea>
+<button onclick="processBulkTeamRegistration()" class="bg-purple-600 hover:bg-purple-500 active:scale-95 transition text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-lg">
+チーム情報を反映・保存
+</button>
+</div>
+
+<!-- SUB-SECTION 2: Custom Block Allocations -->
+<div id="admin-sub-blocks" class="admin-view-block hidden glass-card rounded-2xl p-5 space-y-4">
+<div class="flex justify-between items-center border-b border-white/5 pb-2">
+<h3 class="text-sm font-bold text-gray-200">予選ブロック配置管理</h3>
+<span class="text-[10px] bg-amber-500/15 border border-amber-500/30 text-amber-400 font-bold px-2 py-0.5 rounded">A/B 各7チーム編成</span>
+</div>
+<p class="text-xs text-gray-400">登録済みのチームをA・Bの予選ブロックに手動で個別に配分できます。</p>
+<div id="block-allocator-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Dropdowns are generated dynamically -->
+</div>
+<div class="pt-3">
+<button onclick="applyBlockConfig()" class="bg-amber-600 hover:bg-amber-500 active:scale-95 transition text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-lg">
+このブロック編成を保存して対戦表を自動再生成
+</button>
+</div>
+</div>
+
+<!-- SUB-SECTION 3: Custom Time Slot Editor -->
+<div id="admin-sub-times" class="admin-view-block hidden glass-card rounded-2xl p-5 space-y-4">
+<h3 class="text-sm font-bold text-gray-200 border-b border-white/5 pb-2">タイムテーブル時間枠編集（スケジュール遅れ対策）</h3>
+<p class="text-xs text-gray-400">大会スケジュール全体の時間枠の表記を自由に編集して適用可能です。</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="admin-time-inputs-container">
+<!-- Generated dynamically via JS -->
+</div>
+<button onclick="saveTimeSlots()" class="bg-[#ff9f43] text-black text-xs font-bold py-2.5 px-5 rounded-xl hover:opacity-90 active:scale-95 transition shadow-lg mt-2">
+時間設定を保存する
+</button>
+</div>
+
+<!-- SUB-SECTION 4: Qualifiers Match Input -->
+<div id="admin-sub-matches" class="admin-view-block hidden space-y-4">
+<div class="flex items-center justify-between bg-black/30 border border-white/10 rounded-2xl p-3 flex-wrap gap-2">
+<span class="text-xs font-bold text-gray-300">スコア入力対象ブロック:</span>
+<div class="flex bg-black/45 p-1 border border-white/10 rounded-xl gap-1">
+<button id="tab-adm-match-A" onclick="switchAdminMatchBlock('A')" class="px-3 py-1 rounded-lg text-[11px] font-bold transition-all text-white bg-[#ff9f43]">Aブロック</button>
+<button id="tab-adm-match-B" onclick="switchAdminMatchBlock('B')" class="px-3 py-1 rounded-lg text-[11px] font-bold transition-all text-gray-400">Bブロック</button>
+</div>
+</div>
+<div class="glass-card rounded-2xl p-5">
+<h3 class="text-sm font-bold text-gray-200 mb-4 border-b border-white/5 pb-2">予選マッチスコア＆選手スタッツ登録</h3>
+<div id="admin-match-inputs-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Match score inputs -->
+</div>
+</div>
+</div>
+
+<!-- SUB-SECTION 5: Finals Match Input -->
+<div id="admin-sub-final" class="admin-view-block hidden glass-card rounded-2xl p-5 space-y-4">
+<div class="flex justify-between items-center border-b border-white/5 pb-2">
+<h3 class="text-sm font-bold text-gray-200">🏆 決勝トーナメントスコア登録</h3>
+<span class="text-[10px] text-gray-400">準決勝以降は完全に1試合ずつの順次進行スコアです</span>
+</div>
+<div id="admin-final-inputs-container" class="space-y-4">
+<!-- Dynamic final scores -->
+</div>
+</div>
+
+<!-- SUB-SECTION 6: All Players Stats Manager (Private Admin only) -->
+<div id="admin-sub-allstats" class="admin-view-block hidden glass-card rounded-2xl p-5 space-y-4">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/5 pb-2 gap-2">
+<div>
+<h3 class="text-sm font-bold text-gray-200">👤 全選手戦績一覧（ランキング・非公開）</h3>
+<p class="text-[10px] text-gray-400">予選結果から算出された選手全員の平均スタッツです。</p>
+</div>
+<input type="text" id="admin-player-search" oninput="filterAdminPlayersTable()" placeholder="選手名 or チーム名で検索" class="bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white max-w-[200px] focus:outline-none focus:border-purple-500">
+</div>
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-left border-collapse text-xs">
+<thead>
+<tr class="border-b border-white/10 text-gray-400 font-bold bg-white/[0.01]">
+<th class="py-2 px-2 text-center w-12">順位</th>
+<th class="py-2 px-2">選手名</th>
+<th class="py-2 px-2">チーム名</th>
+<th class="py-2 px-2 text-center cursor-pointer hover:text-white" onclick="sortAdminPlayers('totalMatches')">出場試合数 <i class="fa-solid fa-sort text-[9px]"></i></th>
+<th class="py-2 px-2 text-right cursor-pointer hover:text-white" onclick="sortAdminPlayers('avgPoints')">平均得点 <i class="fa-solid fa-sort text-[9px]"></i></th>
+<th class="py-2 px-2 text-right cursor-pointer hover:text-white" onclick="sortAdminPlayers('avgHits')">平均命中 <i class="fa-solid fa-sort text-[9px]"></i></th>
+<th class="py-2 px-2 text-right cursor-pointer hover:text-white" onclick="sortAdminPlayers('avgLosses')">平均ロスト <i class="fa-solid fa-sort text-[9px]"></i></th>
+<th class="py-2 px-2 text-right cursor-pointer hover:text-white" onclick="sortAdminPlayers('avgAssists')">平均アシスト <i class="fa-solid fa-sort text-[9px]"></i></th>
+<th class="py-2 px-2 text-right cursor-pointer text-purple-400 hover:text-white" onclick="sortAdminPlayers('avgEvaluation')">平均評価 ★ <i class="fa-solid fa-sort text-[9px]"></i></th>
+</tr>
+</thead>
+<tbody id="admin-players-tbody" class="divide-y divide-white/5">
+<!-- Loaded dynamically -->
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+
+<!-- Bottom navigation menu bar -->
+<nav class="fixed bottom-0 left-0 right-0 glass-card bg-black/95 border-t border-white/10 z-50 shadow-2xl">
+<div class="max-w-5xl mx-auto flex justify-around py-3 px-2">
+<button class="nav-item active flex flex-col items-center gap-1 text-center transition-all text-[#ff9f43] w-14" onclick="switchSection('home')">
+<i class="fa-solid fa-house text-lg"></i>
+<span class="text-[9px] font-semibold tracking-tight">ホーム</span>
+</button>
+<button class="nav-item flex flex-col items-center gap-1 text-center transition-all text-gray-400 hover:text-white w-14" onclick="switchSection('teams')">
+<i class="fa-solid fa-users text-lg"></i>
+<span class="text-[9px] font-semibold tracking-tight">チーム</span>
+</button>
+<button class="nav-item flex flex-col items-center gap-1 text-center transition-all text-gray-400 hover:text-white w-14" onclick="switchSection('qualifiers')">
+<i class="fa-solid fa-volleyball text-lg"></i>
+<span class="text-[9px] font-semibold tracking-tight">予選 L</span>
+</button>
+<button class="nav-item flex flex-col items-center gap-1 text-center transition-all text-gray-400 hover:text-white w-14" onclick="switchSection('leaderboard')">
+<i class="fa-solid fa-medal text-lg"></i>
+<span class="text-[9px] font-semibold tracking-tight">個人スタッツ</span>
+</button>
+<button class="nav-item flex flex-col items-center gap-1 text-center transition-all text-gray-400 hover:text-white w-14" onclick="switchSection('tournament')">
+<i class="fa-solid fa-sitemap text-lg"></i>
+<span class="text-[9px] font-semibold tracking-tight">決勝 T</span>
+</button>
+<button class="nav-item flex flex-col items-center gap-1 text-center transition-all text-gray-400 hover:text-white w-14" onclick="switchSection('results')">
+<i class="fa-solid fa-crown text-lg"></i>
+<span class="text-[9px] font-semibold tracking-tight">結果</span>
+</button>
+<button class="nav-item flex flex-col items-center gap-1 text-center transition-all text-gray-400 hover:text-white w-14" onclick="switchSection('admin')">
+<i class="fa-solid fa-lock text-lg"></i>
+<span class="text-[9px] font-semibold tracking-tight">運営</span>
+</button>
+</div>
+</nav>
+
+<!-- MODAL: TEAM NAME ROSTER -->
+<div id="team-info-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+<div class="glass-card bg-[#150a24] border border-white/10 rounded-2xl p-6 w-full max-w-sm relative shadow-2xl">
+<button class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg transition" onclick="closeModal('team-info-modal')">
+<i class="fa-solid fa-xmark"></i>
+</button>
+<h3 id="info-team-name" class="text-xl font-black text-[#ff9f43] text-center mb-4 flex items-center justify-center gap-2"></h3>
+<div class="space-y-4">
+<div>
+<div class="text-[10px] font-bold text-purple-400 border-b border-white/10 pb-1 uppercase tracking-wider text-center mb-2">🏆 所属メンバー一覧</div>
+<ul id="info-members-list" class="space-y-1.5 divide-y divide-white/5">
+<!-- Populated dynamically -->
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MODAL: QUALIFIERS MATCH PLAYER STATS INPUT -->
+<div id="match-stats-modal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+<div class="glass-card bg-[#11081a] border border-white/15 rounded-2xl p-6 w-full max-w-2xl relative shadow-2xl max-h-[85vh] overflow-y-auto custom-scrollbar">
+<button class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg transition" onclick="closeModal('match-stats-modal')">
+<i class="fa-solid fa-xmark"></i>
+</button>
+<h3 id="modal-match-title" class="text-md font-bold text-amber-500 mb-1"></h3>
+<p class="text-[10px] text-gray-400 mb-4">この試合における各選手のスタッツを入力してください。</p>
+<div id="modal-players-container" class="space-y-4">
+<!-- Dynamically loaded player stats -->
+</div>
+<div class="pt-4 border-t border-white/5 flex justify-end gap-3">
+<button onclick="closeModal('match-stats-modal')" class="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold rounded-lg transition">キャンセル</button>
+<button onclick="savePlayerStatsFromModal()" class="px-5 py-2 bg-[#ff9f43] hover:opacity-90 text-black text-xs font-bold rounded-lg shadow-md transition">💾 スタッツを反映保存</button>
+</div>
+</div>
+</div>
+
+<!-- Dynamic Toast Overlay -->
+<div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] space-y-2 pointer-events-none w-[90%] max-w-sm"></div>
+
+<script>
+// System model state with exact teams and members provided
+let appState = {
+timeSlots: [
+'14:30〜14:45', // R1
+'14:45〜15:00', // R2
+'15:00〜15:15', // R3
+'15:15〜15:30', // R4
+'15:30〜15:45', // R5
+'15:45〜16:00', // R6
+'16:00〜16:15', // R7
+'16:15〜16:35', // 集計・休憩20分
+'16:35〜16:50', // 準々決勝
+'16:50〜17:05', // 準決勝
+'17:05〜17:20' // 決勝
+],
+teams: {
+"あめっこ桜牛乳〜うちらダイス集めなんで(笑)": ["ゆら桜牛乳", "ゆり桜牛乳", "inゃこ桜牛乳".replace('in', 'に')],
+"金魂": ["凸守あ", "温だるま", "即死@2度P"],
+"梅汁酔い": ["ラグで画面酔い", "秋月梅男", "生果汁原液"],
+"野良①": ["しぶき", "ちあき", "南京錠破壊"],
+"御伽選抜": ["かけぐるい", "はぅー", "いらちょす"],
+"チーム「ダイソン」": ["やまざきけんた", "勇気35億", "ダイソン津田"],
+"当て逃げ隠密": ["kno0ch1", "๑Ashてるる๑", "ぱいん@下手"],
+"KLM": ["Angelinya", "もにさらだ", "かんにゃー"],
+"朝の光の中で": ["えむこ", "あえじ", "なめこ"],
+"肥満ガールズ": ["めめry", "るるas", "Suzsannik"],
+"山田デブ子": ["りっこ@28", "マキシマム高橋", "ゆのんつぁん"],
+"野良②": ["ごごてぃ", "愛されジョニー", "Right|NAGIKULO"],
+"めろじょいわほー": ["海獺‎‎²", "嵌頓正方形訓平", "薄情ナポリタン"],
+"泥棒三銃士": ["巨MINA", "てらたま©︎", "GAN©︎"]
+},
+blocks: {
+A: [
+"あめっこ桜牛乳〜うちらダイス集めなんで(笑)",
+"金魂",
+"梅汁酔い",
+"野良①",
+"御伽選抜",
+"チーム「ダイソン」",
+"当て逃げ隠密"
+],
+B: [
+"KLM",
+"朝の光の中で",
+"肥満ガールズ",
+"山田デブ子",
+"野良②",
+"めろじょいわほー",
+"泥棒三銃士"
+]
+},
+qualifierMatches: [],
+finalMatches: {
+t1: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+t2: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+semi1: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+semi2: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+final1: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+final2: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 }
+}
+};
+
+let currentViewBlock = 'A';
+let currentAdminMatchBlock = 'A';
+let currentAdminSubTab = 'teams';
+let currentEditingMatchId = null;
+let isAdminLoggedIn = false;
+let adminPlayerSortKey = 'avgEvaluation';
+let adminPlayerSortOrder = 'desc';
+
+window.onload = function() {
+const saved = localStorage.getItem('dodgeball_kansei_v8');
+if (saved) {
+try {
+appState = JSON.parse(saved);
+} catch (e) {
+setupSchedule();
+}
+} else {
+setupSchedule();
+}
+renderAll();
+};
+
+function saveToStorage() {
+localStorage.setItem('dodgeball_kansei_v8', JSON.stringify(appState));
+}
+
+function setupSchedule() {
+appState.qualifierMatches = [];
+let idCounter = 0;
+
+const matchesA = [
+[[0, 6], [1, 5], [2, 4]],
+[[3, 4], [5, 6], [0, 1]],
+[[1, 2], [3, 6], [5, 0]],
+[[4, 6], [1, 0], [2, 3]],
+[[5, 2], [4, 1], [0, 3]],
+[[6, 2], [5, 3], [4, 0]],
+[[1, 6], [2, 3], [5, 4]]
+];
+
+const matchesB = [
+[[0, 6], [1, 5], [2, 4]],
+[[3, 4], [5, 6], [0, 1]],
+[[1, 2], [3, 6], [5, 0]],
+[[4, 6], [1, 0], [2, 3]],
+[[5, 2], [4, 1], [0, 3]],
+[[6, 2], [5, 3], [4, 0]],
+[[1, 6], [2, 3], [5, 4]]
+];
+
+for (let r = 0; r < 7; r++) {
+matchesA[r].forEach(pair => {
+appState.qualifierMatches.push({
+id: idCounter++,
+round: r,
+block: 'A',
+t1: appState.blocks.A[pair[0]],
+t2: appState.blocks.A[pair[1]],
+s1: null,
+s2: null,
+ded1: 0,
+ded2: 0,
+playerStats: {}
+});
+});
+matchesB[r].forEach(pair => {
+appState.qualifierMatches.push({
+id: idCounter++,
+round: r,
+block: 'B',
+t1: appState.blocks.B[pair[0]],
+t2: appState.blocks.B[pair[1]],
+s1: null,
+s2: null,
+ded1: 0,
+ded2: 0,
+playerStats: {}
+});
+});
+}
+resetFinals();
+saveToStorage();
+}
+
+function resetFinals() {
+appState.finalMatches = {
+t1: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+t2: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+semi1: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+semi2: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+final1: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 },
+final2: { name1:'', name2:'', s1:null, s2:null, d1:0, d2:0 }
+};
+}
+
+function switchSection(sectId) {
+document.querySelectorAll('.page-section').forEach(el => {
+el.classList.add('hidden');
+el.classList.remove('block');
+});
+document.querySelectorAll('.nav-item').forEach(el => {
+el.classList.remove('text-[#ff9f43]');
+el.classList.add('text-gray-400');
+el.classList.remove('active');
+});
+const target = document.getElementById(`section-${sectId}`);
+if (target) {
+target.classList.remove('hidden');
+target.classList.add('block');
+}
+const activeNavBtn = Array.from(document.querySelectorAll('.nav-item')).find(btn =>
+btn.getAttribute('onclick').includes(`'${sectId}'`)
+);
+if (activeNavBtn) {
+activeNavBtn.classList.remove('text-gray-400');
+activeNavBtn.classList.add('text-[#ff9f43]');
+activeNavBtn.classList.add('active');
+}
+renderAll();
+}
+
+function openModal(id) {
+const el = document.getElementById(id);
+if (el) el.classList.remove('hidden');
+}
+
+function closeModal(id) {
+const el = document.getElementById(id);
+if (el) el.classList.add('hidden');
+}
+
+function showToast(message, type = 'success') {
+const container = document.getElementById('toast-container');
+const toast = document.createElement('div');
+toast.className = `toast-enter flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold text-white shadow-xl ${
+type === 'error' ? 'bg-red-950/95 border-red-500/50 text-red-200' : 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200'
+}`;
+toast.innerHTML = `<i class="${type === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check'}"></i> <span>${message}</span>`;
+container.appendChild(toast);
+setTimeout(() => toast.remove(), 4000);
+}
+
+function renderTimetable() {
+const tbody = document.getElementById('global-timetable-tbody');
+if (!tbody) return;
+tbody.innerHTML = '';
+
+const headerBadge = document.getElementById('header-schedule-badge');
+if (headerBadge) {
+headerBadge.innerText = `開催スケジュール: ${appState.timeSlots[0] || '14:30'} 開始`;
+}
+
+for (let r = 0; r < 7; r++) {
+const timeStr = appState.timeSlots[r] || `予選 R${r+1}`;
+const matchesInR = appState.qualifierMatches.filter(m => m.round === r);
+const mA1 = matchesInR.find(m => m.block === 'A' && matchesInR.filter(x=>x.block==='A').indexOf(m) === 0);
+const mA2 = matchesInR.find(m => m.block === 'A' && matchesInR.filter(x=>x.block==='A').indexOf(m) === 1);
+const mA3 = matchesInR.find(m => m.block === 'A' && matchesInR.filter(x=>x.block==='A').indexOf(m) === 2);
+
+const mB1 = matchesInR.find(m => m.block === 'B' && matchesInR.filter(x=>x.block==='B').indexOf(m) === 0);
+const mB2 = matchesInR.find(m => m.block === 'B' && matchesInR.filter(x=>x.block==='B').indexOf(m) === 1);
+const mB3 = matchesInR.find(m => m.block === 'B' && matchesInR.filter(x=>x.block==='B').indexOf(m) === 2);
+
+function formatBlockMatches(list) {
+return list.map(m => {
+if (!m) return '';
+const isSet = m.s1 !== null && m.s2 !== null;
+const scoreStr = isSet
+? `<span class="text-[#ff9f43] font-black">${m.s1} - ${m.s2}</span>`
+: '<span class="text-gray-500 font-bold px-1.5 py-0.2 bg-white/5 rounded text-[10px]">vs</span>';
+return `
+<div class="py-1 border-b border-white/5 last:border-b-0">
+<div class="text-[11px] font-semibold text-gray-200 truncate max-w-[280px]">${m.t1}</div>
+<div class="my-0.5 text-xs">${scoreStr}</div>
+<div class="text-[11px] font-semibold text-gray-200 truncate max-w-[280px]">${m.t2}</div>
+</div>
+`;
+}).join('');
+}
+
+tbody.innerHTML += `
+<tr class="hover:bg-white/[0.01] transition">
+<td class="align-middle font-mono text-xs py-3 font-black text-gray-400 border-r border-white/10 text-center">${timeStr}</td>
+<td class="py-2 px-3 border-r border-white/5">${formatBlockMatches([mA1, mA2, mA3])}</td>
+<td class="py-2 px-3">${formatBlockMatches([mB1, mB2, mB3])}</td>
+</tr>
+`;
+}
+
+const breakTimeStr = appState.timeSlots[7] || '16:15〜16:35';
+tbody.innerHTML += `
+<tr class="hover:bg-white/[0.01] border-t border-amber-500/30 bg-amber-950/10">
+<td class="align-middle font-mono text-xs py-3 font-black text-amber-400 border-r border-white/10 text-center">${breakTimeStr}</td>
+<td colspan="2" class="text-center py-2 text-xs font-bold text-amber-300">
+<i class="fa-solid fa-mug-hot"></i> 予選結果集計・決勝トーナメント抽選タイム (20分)
+</td>
+</tr>
+`;
+
+const f = appState.finalMatches;
+function finalCell(title, mObj) {
+if (!mObj || (!mObj.name1 && !mObj.name2)) {
+return `
+<div class="py-2 text-center">
+<span class="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] font-bold text-purple-400 mb-1">${title}</span>
+<div class="text-gray-500 text-[11px] italic">対戦相手決定待ち</div>
+</div>
+`;
+}
+const isSet = mObj.s1 !== null && mObj.s2 !== null;
+const scoreStr = isSet
+? `<span class="text-white bg-purple-600/50 border border-purple-500 px-3 py-1 rounded-lg font-black text-sm mx-3">${mObj.s1} - ${mObj.s2}</span>`
+: '<span class="text-gray-400 font-bold px-3 py-1 bg-white/5 rounded-lg border border-white/10 mx-3">VS</span>';
+return `
+<div class="py-2 flex flex-col md:flex-row items-center justify-center gap-1">
+<span class="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-500 text-[10px] font-bold text-purple-300 md:mr-4">${title}</span>
+<div class="flex items-center justify-center gap-2">
+<span class="font-bold text-xs text-gray-200 max-w-[180px] truncate text-right">${mObj.name1}</span>
+${scoreStr}
+<span class="font-bold text-xs text-gray-200 max-w-[180px] truncate text-left">${mObj.name2}</span>
+</div>
+</div>
+`;
+}
+
+tbody.innerHTML += `
+<tr class="hover:bg-white/[0.01] border-t border-purple-500/20">
+<td class="align-middle font-mono text-xs py-3 font-black text-purple-400 border-r border-white/10 text-center">${appState.timeSlots[8] || '16:35'}</td>
+<td colspan="2" class="bg-purple-950/5 space-y-2">
+${finalCell('準々決勝① (A3位 vs B2位)', f.t1)}
+<div class="border-t border-white/5"></div>
+${finalCell('準々決勝② (A2位 vs B3位)', f.t2)}
+</td>
+</tr>
+`;
+
+tbody.innerHTML += `
+<tr class="hover:bg-white/[0.01] border-t border-purple-500/20">
+<td class="align-middle font-mono text-xs py-3 font-black text-purple-400 border-r border-white/10 text-center">${appState.timeSlots[9] || '16:50'}</td>
+<td colspan="2" class="bg-purple-950/5 space-y-2">
+${finalCell('準決勝① (A1位シード vs QF①勝者)', f.semi1)}
+<div class="border-t border-white/5"></div>
+${finalCell('準決勝② (B1位シード vs QF②勝者)', f.semi2)}
+</td>
+</tr>
+`;
+
+tbody.innerHTML += `
+<tr class="hover:bg-white/[0.01] border-t border-purple-500/20">
+<td class="align-middle font-mono text-xs py-3 font-black text-purple-400 border-r border-white/10 text-center">${appState.timeSlots[10] || '17:05'}</td>
+<td colspan="2" class="bg-purple-950/5">${finalCell('🏆 決勝戦', f.final1)}</td>
+</tr>
+`;
+}
+
+function renderTeams() {
+const container = document.getElementById('teams-container');
+if (!container) return;
+container.innerHTML = '';
+Object.keys(appState.teams).forEach(tName => {
+container.innerHTML += `
+<div onclick="openTeamInfoPopup('${tName}')" class="team-card bg-white/5 border border-white/10 p-5 rounded-xl text-center hover:bg-white/10 hover:border-purple-500/40 transition duration-300 cursor-pointer shadow-md group">
+<div class="w-12 h-12 rounded-full bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto mb-3 text-lg font-bold group-hover:scale-110 transition duration-300">
+<i class="fa-solid fa-users"></i>
+</div>
+<div class="text-xs font-black text-gray-100 group-hover:text-purple-400 transition mb-1">${tName}</div>
+<div class="text-[10px] text-gray-400">メンバー一覧を見る</div>
+</div>
+`;
+});
+}
+
+function openTeamInfoPopup(tName) {
+document.getElementById('info-team-name').innerText = `🛡️ ${tName}`;
+const list = document.getElementById('info-members-list');
+list.innerHTML = '';
+const members = appState.teams[tName] || [];
+members.forEach(m => {
+list.innerHTML += `
+<li class="py-2 text-xs font-medium text-gray-300 flex items-center justify-between">
+<span>${m}</span>
+<span class="text-[9px] bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded text-purple-300">選手</span>
+</li>
+`;
+});
+openModal('team-info-modal');
+}
+
+function getBlockStats(bl) {
+const stats = {};
+const list = appState.blocks[bl] || [];
+list.forEach(t => {
+stats[t] = { name: t, won: 0, diffSum: 0, dedSum: 0, count: 0, hasPlayed: false };
+});
+appState.qualifierMatches.filter(m => m.block === bl).forEach(m => {
+if (m.s1 === null || m.s2 === null) return;
+if (!stats[m.t1]) stats[m.t1] = { name: m.t1, won: 0, diffSum: 0, dedSum: 0, count: 0, hasPlayed: false };
+if (!stats[m.t2]) stats[m.t2] = { name: m.t2, won: 0, diffSum: 0, dedSum: 0, count: 0, hasPlayed: false };
+stats[m.t1].hasPlayed = true;
+stats[m.t2].hasPlayed = true;
+stats[m.t1].diffSum += (m.s1 - m.s2);
+stats[m.t2].diffSum += (m.s2 - m.s1);
+stats[m.t1].dedSum += Number(m.ded1 || 0);
+stats[m.t2].dedSum += Number(m.ded2 || 0);
+stats[m.t1].count++;
+stats[m.t2].count++;
+if (m.s1 > m.s2) stats[m.t1].won++;
+if (m.s2 > m.s1) stats[m.t2].won++;
+});
+return Object.values(stats).map(s => {
+const div = s.count || 1;
+return {
+name: s.name,
+won: s.won,
+diffAvgVal: parseFloat((s.diffSum / div).toFixed(2)),
+dedAvgVal: parseFloat((s.dedSum / div).toFixed(2)),
+hasPlayed: s.hasPlayed
+};
+}).sort((a, b) => {
+if (b.won !== a.won) return b.won - a.won;
+if (b.diffAvgVal !== a.diffAvgVal) return b.diffAvgVal - a.diffAvgVal;
+return b.dedAvgVal - a.dedAvgVal;
+});
+}
+
+function switchQualifierBlock(bl) {
+currentViewBlock = bl;
+['A', 'B'].forEach(b => {
+const btn = document.getElementById(`tab-q-${b}`);
+if (btn) {
+if (b === bl) {
+btn.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-white bg-[#ff9f43]";
+} else {
+btn.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white";
+}
+}
+});
+renderQualifierTable();
+}
+
+function renderQualifierTable() {
+const tbody = document.getElementById('ranking-tbody');
+if (!tbody) return;
+tbody.innerHTML = '';
+const sorted = getBlockStats(currentViewBlock);
+sorted.forEach((s, idx) => {
+tbody.innerHTML += `
+<tr class="hover:bg-white/[0.01]">
+<td class="py-2.5 text-center font-bold font-mono text-xs ${idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-gray-300' : idx === 2 ? 'text-purple-400' : 'text-gray-500'}">${idx+1}</td>
+<td class="py-2.5 text-left font-bold text-gray-200">${s.name}</td>
+<td class="py-2.5 text-center font-bold text-[#ff9f43] font-mono">${s.won}</td>
+<td class="py-2.5 text-right font-mono text-gray-400">${s.diffAvgVal > 0 ? '+' : ''}${s.diffAvgVal}</td>
+<td class="py-2.5 text-right font-mono text-purple-400">${s.dedAvgVal}</td>
+</tr>
+`;
+});
+
+const mContainer = document.getElementById('results-list-container');
+mContainer.innerHTML = '';
+const list = appState.qualifierMatches.filter(m => m.block === currentViewBlock);
+list.forEach(m => {
+const isSet = m.s1 !== null && m.s2 !== null;
+mContainer.innerHTML += `
+<div class="glass-card bg-black/25 rounded-xl p-4 border border-white/5 space-y-2">
+<div class="flex justify-between items-center text-[10px] text-gray-500 font-bold font-mono border-b border-white/5 pb-1">
+<span>ROUND ${m.round+1} / MATCH ${m.id+1}</span>
+<span class="${isSet ? 'text-[#ff9f43]' : 'text-gray-600'}">${isSet ? '試合終了' : '予定'}</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="font-bold truncate max-w-[120px] text-right text-gray-300">${m.t1}</span>
+<div class="font-mono flex items-center justify-center gap-2 bg-black/40 px-3 py-1 rounded border border-white/5">
+<span class="font-black text-sm text-gray-100">${isSet ? m.s1 : '-'}</span>
+<span class="text-[10px] text-gray-600">vs</span>
+<span class="font-black text-sm text-gray-100">${isSet ? m.s2 : '-'}</span>
+</div>
+<span class="font-bold truncate max-w-[120px] text-left text-gray-300">${m.t2}</span>
+</div>
+${isSet ? `<div class="text-[9px] text-right text-purple-400 font-mono">演繹点: ${m.ded1} vs ${m.ded2}</div>` : ''}
+</div>
+`;
+});
+}
+
+function computePlayerAverages() {
+let playerAverages = {};
+Object.keys(appState.teams).forEach(tName => {
+appState.teams[tName].forEach(pName => {
+playerAverages[pName] = {
+name: pName,
+team: tName,
+totalMatches: 0,
+sumPoints: 0,
+sumHits: 0,
+sumLosses: 0,
+sumAssists: 0,
+sumEvaluation: 0,
+avgPoints: 0,
+avgHits: 0,
+avgLosses: 0,
+avgAssists: 0,
+avgEvaluation: 0
+};
+});
+});
+
+appState.qualifierMatches.forEach(m => {
+if (m.s1 === null || m.s2 === null) return;
+if (!m.playerStats) return;
+Object.keys(m.playerStats).forEach(pName => {
+if (playerAverages[pName]) {
+const ps = m.playerStats[pName];
+playerAverages[pName].totalMatches++;
+playerAverages[pName].sumPoints += Number(ps.points || 0);
+playerAverages[pName].sumHits += Number(ps.hits || 0);
+playerAverages[pName].sumLosses += Number(ps.losses || 0);
+playerAverages[pName].sumAssists += Number(ps.assists || 0);
+playerAverages[pName].sumEvaluation += Number(ps.evaluation || 0);
+}
+});
+});
+
+Object.keys(playerAverages).forEach(pName => {
+const p = playerAverages[pName];
+const div = p.totalMatches || 1;
+p.avgPoints = parseFloat((p.sumPoints / div).toFixed(2));
+p.avgHits = parseFloat((p.sumHits / div).toFixed(2));
+p.avgLosses = parseFloat((p.sumLosses / div).toFixed(2));
+p.avgAssists = parseFloat((p.sumAssists / div).toFixed(2));
+p.avgEvaluation = parseFloat((p.sumEvaluation / div).toFixed(2));
+});
+return Object.values(playerAverages);
+}
+
+function renderLeaderboard() {
+const container = document.getElementById('global-leaderboard-container');
+if (!container) return;
+container.innerHTML = '';
+const players = computePlayerAverages();
+const sorted = players.sort((a, b) => b.avgEvaluation - a.avgEvaluation);
+const best8 = sorted.slice(0, 8);
+if (best8.length === 0 || best8[0].totalMatches === 0) {
+container.innerHTML = `
+<div class="col-span-full py-8 text-center text-gray-500 italic text-xs">
+予選試合スコア入力後、平均評価上位8名がここに表示されます。
+</div>
+`;
+return;
+}
+best8.forEach((p, idx) => {
+let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '✨';
+container.innerHTML += `
+<div class="player-card glass-card bg-white/[0.02] border border-white/5 rounded-xl p-4 text-center hover:scale-[1.02] transition duration-300">
+<div class="text-xs font-bold mb-2 flex items-center justify-center gap-1">
+<span class="text-lg">${medal}</span>
+<span class="text-gray-400">第 ${idx + 1} 位</span>
+</div>
+<div class="text-sm font-black text-white mb-0.5 truncate">${p.name}</div>
+<div class="text-[10px] text-[#ff9f43] font-semibold mb-3 truncate">${p.team}</div>
+<div class="bg-black/50 rounded-lg p-2.5 space-y-1 text-[11px] border border-white/5">
+<div class="flex justify-between">
+<span class="text-gray-400">平均評価 ★:</span>
+<span class="font-black text-purple-400">${p.avgEvaluation}</span>
+</div>
+<div class="flex justify-between border-t border-white/5 pt-1 mt-1 text-[10px] text-gray-400">
+<span>得点: ${p.avgPoints}</span>
+<span>命中: ${p.avgHits}</span>
+</div>
+</div>
+<div class="text-[9px] text-gray-500 text-right mt-1 font-mono">出場試合: ${p.totalMatches}</div>
+</div>
+`;
+});
+}
+
+function buildFinalsFromQualifiers() {
+const aRes = getBlockStats('A');
+const bRes = getBlockStats('B');
+
+const f = appState.finalMatches;
+
+const aHasPlayed = aRes.some(s => s.hasPlayed);
+const bHasPlayed = bRes.some(s => s.hasPlayed);
+
+// 予選スコアが未入力の間はプレースホルダーのみを表示
+if (!aHasPlayed && !bHasPlayed) {
+f.semi1.name1 = 'Aブロック 1位 (シード)';
+f.semi2.name1 = 'Bブロック 1位 (シード)';
+f.t1.name1 = 'Aブロック 3位';
+f.t1.name2 = 'Bブロック 2位';
+f.t2.name1 = 'Aブロック 2位';
+f.t2.name2 = 'Bブロック 3位';
+} else {
+if (aRes[0] && aRes[0].name) f.semi1.name1 = `${aRes[0].name} [Aブロック1位]`;
+if (bRes[0] && bRes[0].name) f.semi2.name1 = `${bRes[0].name} [Bブロック1位]`;
+
+if (aRes[2] && aRes[2].name) f.t1.name1 = `${aRes[2].name} [Aブロック3位]`;
+if (bRes[1] && bRes[1].name) f.t1.name2 = `${bRes[1].name} [Bブロック2位]`;
+
+if (aRes[1] && aRes[1].name) f.t2.name1 = `${aRes[1].name} [Aブロック2位]`;
+if (bRes[2] && bRes[2].name) f.t2.name2 = `${bRes[2].name} [Bブロック3位]`;
+}
+
+if (f.t1.s1 !== null && f.t1.s2 !== null) {
+f.semi1.name2 = (Number(f.t1.s1) > Number(f.t1.s2) || (Number(f.t1.s1) === Number(f.t1.s2) && Number(f.t1.d1) >= Number(f.t1.d2))) ? f.t1.name1 : f.t1.name2;
+} else {
+f.semi1.name2 = '準々決勝① 勝者';
+}
+
+if (f.t2.s1 !== null && f.t2.s2 !== null) {
+f.semi2.name2 = (Number(f.t2.s1) > Number(f.t2.s2) || (Number(f.t2.s1) === Number(f.t2.s2) && Number(f.t2.d1) >= Number(f.t2.d2))) ? f.t2.name1 : f.t2.name2;
+} else {
+f.semi2.name2 = '準々決勝② 勝者';
+}
+
+if (f.semi1.s1 !== null && f.semi1.s2 !== null) {
+f.final1.name1 = (Number(f.semi1.s1) > Number(f.semi1.s2) || (Number(f.semi1.s1) === Number(f.semi1.s2) && Number(f.semi1.d1) >= Number(f.semi1.d1))) ? f.semi1.name1 : f.semi1.name2;
+} else {
+f.final1.name1 = '準決勝① 勝者';
+}
+
+if (f.semi2.s1 !== null && f.semi2.s2 !== null) {
+f.final1.name2 = (Number(f.semi2.s1) > Number(f.semi2.s2) || (Number(f.semi2.s1) === Number(f.semi2.s2) && Number(f.semi2.d2) >= Number(f.semi2.d2))) ? f.semi2.name1 : f.semi2.name2;
+} else {
+f.final1.name2 = '準決勝② 勝者';
+}
+
+f.final2.name1 = f.final1.name1;
+f.final2.name2 = f.final1.name2;
+}
+
+function renderTournamentView() {
+buildFinalsFromQualifiers();
+const container = document.getElementById('tournament-view-container');
+if (!container) return;
+container.innerHTML = '';
+const f = appState.finalMatches;
+
+function renderMatchNode(title, mObj, detailsText = '') {
+const isSet = mObj.s1 !== null && mObj.s2 !== null;
+const winnerClass = "text-amber-400 font-extrabold";
+let t1Class = "", t2Class = "";
+if (isSet) {
+if (Number(mObj.s1) > Number(mObj.s2)) t1Class = winnerClass;
+else if (Number(mObj.s2) > Number(mObj.s1)) t2Class = winnerClass;
+else {
+if (Number(mObj.d1) >= Number(mObj.d2)) t1Class = winnerClass;
+else t2Class = winnerClass;
+}
+}
+return `
+<div class="glass-card bg-black/45 rounded-xl p-4 border border-white/5 space-y-2 max-w-sm mx-auto">
+<div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider border-b border-white/5 pb-1 flex justify-between">
+<span>${title}</span>
+${detailsText ? `<span class="text-purple-400">${detailsText}</span>` : ''}
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between items-center text-xs">
+<span class="truncate max-w-[190px] text-gray-200 ${t1Class}">${mObj.name1 || '決定前'}</span>
+<span class="font-mono font-black text-sm bg-black/30 px-2 py-0.5 rounded text-gray-100">${isSet ? mObj.s1 : '-'}</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="truncate max-w-[190px] text-gray-200 ${t2Class}">${mObj.name2 || '決定前'}</span>
+<span class="font-mono font-black text-sm bg-black/30 px-2 py-0.5 rounded text-gray-100">${isSet ? mObj.s2 : '-'}</span>
+</div>
+</div>
+</div>
+`;
+}
+
+container.innerHTML = `
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+<div class="space-y-6">
+<h4 class="text-xs font-black text-gray-400 uppercase tracking-widest text-center border-b border-white/5 pb-2">準々決勝 (QF)</h4>
+${renderMatchNode('準々決勝①', f.t1, '勝者はSF①へ')}
+${renderMatchNode('準々決勝②', f.t2, '勝者はSF②へ')}
+</div>
+<div class="space-y-6">
+<h4 class="text-xs font-black text-purple-400 uppercase tracking-widest text-center border-b border-white/5 pb-2">準決勝 (SF)</h4>
+${renderMatchNode('準決勝①', f.semi1)}
+${renderMatchNode('準決勝②', f.semi2)}
+</div>
+<div class="space-y-6">
+<h4 class="text-xs font-black text-amber-400 uppercase tracking-widest text-center border-b border-white/5 pb-2">決勝 (GF)</h4>
+${renderMatchNode('決勝 第1戦', f.final1)}
+</div>
+</div>
+`;
+}
+
+function renderFinalResults() {
+const container = document.getElementById('final-results-container');
+if (!container) return;
+container.innerHTML = '';
+const f1 = appState.finalMatches.final1;
+if (f1.s1 === null || f1.s2 === null) {
+container.innerHTML = `
+<div class="text-center py-12 space-y-3">
+<div class="text-4xl text-amber-500/20"><i class="fa-solid fa-trophy"></i></div>
+<p class="text-xs text-gray-400 italic">決勝戦のスコアが入力された後に、ここに最終結果が発表されます。</p>
+</div>
+`;
+return;
+}
+let champ = '', runner = '';
+if (Number(f1.s1) > Number(f1.s2)) {
+champ = f1.name1;
+runner = f1.name2;
+} else {
+champ = f1.name2;
+runner = f1.name1;
+}
+
+const cleanName = (n) => n.split(' [')[0];
+container.innerHTML = `
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(251,191,36,0.1)_0%,transparent_70%)] pointer-events-none"></div>
+<div class="relative z-10 text-center space-y-6">
+<div class="inline-flex p-4 bg-amber-500/10 text-amber-400 rounded-full text-4xl shadow-inner border border-amber-500/20">
+<i class="fa-solid fa-crown animate-bounce"></i>
+</div>
+<div>
+<div class="text-xs font-bold text-amber-500 tracking-widest uppercase mb-1">避球杯 最終結果発表</div>
+<h2 class="text-3xl font-black text-white">栄光の覇者</h2>
+</div>
+<div class="glass-card bg-amber-500/5 border border-amber-500/20 rounded-2xl py-6 px-4 max-w-md mx-auto space-y-1">
+<span class="text-3xl">🥇</span>
+<div class="text-2xl font-black text-amber-400 tracking-wide">${cleanName(champ)}</div>
+<p class="text-[10px] text-gray-400 font-bold">ドッジボール選手権 優勝</p>
+</div>
+<div class="glass-card bg-white/[0.01] border border-white/5 rounded-2xl py-4 px-4 max-w-sm mx-auto flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="text-xl">🥈</span>
+<div class="text-left">
+<div class="text-sm font-bold text-gray-300">${cleanName(runner)}</div>
+<p class="text-[9px] text-gray-500">準優勝</p>
+</div>
+</div>
+<span class="text-[10px] text-gray-400 font-semibold bg-white/5 px-2.5 py-1 rounded">FINALIST</span>
+</div>
+</div>
+`;
+}
+
+function loginAdmin() {
+const pwInput = document.getElementById('admin-password');
+if (pwInput.value === 'nova123') {
+isAdminLoggedIn = true;
+document.getElementById('admin-login-box').classList.add('hidden');
+document.getElementById('admin-panel').classList.remove('hidden');
+document.getElementById('admin-status-badge').classList.remove('hidden');
+showToast('管理特権が正常に認証されました');
+renderAdminPanel();
+} else {
+showToast('認証キーが不一致です', 'error');
+}
+}
+
+function switchAdminSubTab(tab) {
+currentAdminSubTab = tab;
+document.querySelectorAll('.admin-view-block').forEach(el => el.classList.add('hidden'));
+document.querySelectorAll('.admin-side-tab').forEach(el => {
+el.className = "admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-white/5 hover:bg-white/10 text-gray-300 transition flex items-center justify-between";
+});
+const activeBtn = document.getElementById(`admin-btn-${tab}`);
+if (activeBtn) {
+activeBtn.className = "admin-side-tab w-full py-2.5 px-4 rounded-xl text-xs font-bold text-left bg-[#ff9f43] text-black transition flex items-center justify-between";
+}
+document.getElementById(`admin-sub-${tab}`).classList.remove('hidden');
+renderAdminPanel();
+}
+
+function renderAdminPanel() {
+if (currentAdminSubTab === 'teams') {
+renderTeamTextInput();
+} else if (currentAdminSubTab === 'blocks') {
+renderBlockAllocator();
+} else if (currentAdminSubTab === 'times') {
+renderTimeSlotsInputs();
+} else if (currentAdminSubTab === 'matches') {
+renderAdminMatchBlockInputs();
+} else if (currentAdminSubTab === 'final') {
+renderAdminFinalInputs();
+} else if (currentAdminSubTab === 'allstats') {
+renderAdminPlayersTable();
+}
+}
+
+function renderTeamTextInput() {
+const area = document.getElementById('teamInputTextarea');
+if (!area) return;
+let textVal = '';
+Object.keys(appState.teams).forEach(tName => {
+textVal += tName + '\n';
+appState.teams[tName].forEach(mName => {
+textVal += mName + '\n';
+});
+textVal += '\n';
+});
+area.value = textVal.trim();
+}
+
+function processBulkTeamRegistration() {
+const area = document.getElementById('teamInputTextarea');
+const lines = area.value.trim().split('\n').map(l => l.trim());
+let parsedTeams = {};
+let currentTeamName = null;
+
+lines.forEach(line => {
+if (line === '') {
+currentTeamName = null;
+} else {
+if (!currentTeamName) {
+currentTeamName = line;
+parsedTeams[currentTeamName] = [];
+} else {
+parsedTeams[currentTeamName].push(line);
+}
+}
+});
+
+const parsedKeys = Object.keys(parsedTeams);
+if (parsedKeys.length !== 14) {
+showToast(`14チームちょうど登録する必要があります (現在: ${parsedKeys.length} チーム)`, 'error');
+return;
+}
+
+appState.teams = parsedTeams;
+appState.blocks = { A: [], B: [] };
+parsedKeys.forEach((key, idx) => {
+if (idx < 7) appState.blocks.A.push(key);
+else appState.blocks.B.push(key);
+});
+setupSchedule();
+saveToStorage();
+renderAll();
+showToast('チームとメンバー情報が更新されました！');
+}
+
+function renderBlockAllocator() {
+const container = document.getElementById('block-allocator-container');
+if (!container) return;
+container.innerHTML = '';
+const tKeys = Object.keys(appState.teams);
+if (tKeys.length === 0) return;
+
+['A', 'B'].forEach(bl => {
+let blockHeader = `
+<div class="space-y-2 p-4 bg-black/40 border border-white/5 rounded-xl">
+<h4 class="text-xs font-bold text-center border-b border-white/5 pb-1 ${bl==='A' ? 'text-red-400' : 'text-blue-400'}">${bl}ブロック (7チーム)</h4>
+`;
+for (let i = 0; i < 7; i++) {
+const selectedVal = appState.blocks[bl][i] || '';
+let optionsHtml = `<option value="">-- チームを選択 --</option>`;
+tKeys.forEach(tk => {
+optionsHtml += `<option value="${tk}" ${tk === selectedVal ? 'selected' : ''}>${tk}</option>`;
+});
+blockHeader += `
+<div class="mt-2">
+<label class="text-[9px] text-gray-500 block">配置 #${i+1}</label>
+<select id="block-alloc-${bl}-${i}" class="w-full bg-black/60 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500">
+${optionsHtml}
+</select>
+</div>
+`;
+}
+blockHeader += `</div>`;
+container.innerHTML += blockHeader;
+});
+}
+
+function applyBlockConfig() {
+let nextBlocks = { A: [], B: [] };
+let chosen = new Set();
+let hasError = false;
+
+['A', 'B'].forEach(bl => {
+for (let i = 0; i < 7; i++) {
+const el = document.getElementById(`block-alloc-${bl}-${i}`);
+if (!el) return;
+const val = el.value;
+if (!val) {
+showToast('すべての配置スロットを選択してください', 'error');
+hasError = true;
+return;
+}
+if (chosen.has(val)) {
+showToast(`同一チームが重複しています: ${val}`, 'error');
+hasError = true;
+return;
+}
+chosen.add(val);
+nextBlocks[bl].push(val);
+}
+});
+
+if (hasError) return;
+appState.blocks = nextBlocks;
+setupSchedule();
+saveToStorage();
+renderAll();
+showToast('ブロックの手動配置が完全に適用されました！');
+}
+
+function renderTimeSlotsInputs() {
+const container = document.getElementById('admin-time-inputs-container');
+if (!container) return;
+container.innerHTML = '';
+const labels = [
+'予選 R1', '予選 R2', '予選 R3', '予選 R4', '予選 R5', '予選 R6', '予選 R7',
+'集計・休憩タイム (20分)',
+'準々決勝', '準決勝', '🏆 決勝戦'
+];
+for (let i = 0; i < 11; i++) {
+container.innerHTML += `
+<div>
+<label class="block text-[10px] font-bold text-gray-400 mb-1">${labels[i]}</label>
+<input type="text" id="admin-time-input-${i}" value="${appState.timeSlots[i] || ''}" class="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-center text-white font-mono focus:outline-none focus:border-purple-500">
+</div>
+`;
+}
+}
+
+function saveTimeSlots() {
+let slots = [];
+for (let i = 0; i < 11; i++) {
+const val = document.getElementById(`admin-time-input-${i}`).value.trim();
+slots.push(val || `枠${i+1}`);
+}
+appState.timeSlots = slots;
+saveToStorage();
+renderTimetable();
+showToast('タイムテーブル時間枠の表記を更新保存しました');
+}
+
+function switchAdminMatchBlock(bl) {
+currentAdminMatchBlock = bl;
+['A', 'B'].forEach(b => {
+const el = document.getElementById(`tab-adm-match-${b}`);
+if (el) {
+if (b === bl) {
+el.className = "px-3 py-1 rounded-lg text-[11px] font-bold transition-all text-white bg-[#ff9f43]";
+} else {
+el.className = "px-3 py-1 rounded-lg text-[11px] font-bold transition-all text-gray-400";
+}
+}
+});
+renderAdminMatchBlockInputs();
+}
+
+function renderAdminMatchBlockInputs() {
+const container = document.getElementById('admin-match-inputs-container');
+if (!container) return;
+container.innerHTML = '';
+const list = appState.qualifierMatches.filter(m => m.block === currentAdminMatchBlock);
+list.forEach(m => {
+container.innerHTML += `
+<div class="glass-card bg-black/25 rounded-xl p-4 border border-white/5 space-y-3">
+<div class="text-[10px] text-gray-500 font-bold font-mono border-b border-white/5 pb-1">
+MATCH ${m.id+1} (ROUND ${m.round+1})
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<span class="text-xs font-extrabold text-gray-200 block truncate">${m.t1}</span>
+<div>
+<label class="block text-[9px] text-gray-500">スコア</label>
+<input type="number" id="am-s1-${m.id}" value="${m.s1!==null?m.s1:''}" onchange="saveQualifierMatchValue(${m.id})" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-center text-white focus:outline-none focus:border-[#ff9f43]">
+</div>
+<div>
+<label class="block text-[9px] text-gray-500">演繹点平均</label>
+<input type="number" step="any" id="am-d1-${m.id}" value="${m.ded1||0}" onchange="saveQualifierMatchValue(${m.id})" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-center text-white focus:outline-none focus:border-[#ff9f43]">
+</div>
+</div>
+<div class="space-y-2">
+<span class="text-xs font-extrabold text-gray-200 block truncate">${m.t2}</span>
+<div>
+<label class="block text-[9px] text-gray-500">スコア</label>
+<input type="number" id="am-s2-${m.id}" value="${m.s2!==null?m.s2:''}" onchange="saveQualifierMatchValue(${m.id})" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-center text-white focus:outline-none focus:border-[#ff9f43]">
+</div>
+<div>
+<label class="block text-[9px] text-gray-500">演繹点平均</label>
+<input type="number" step="any" id="am-d2-${m.id}" value="${m.ded2||0}" onchange="saveQualifierMatchValue(${m.id})" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-center text-white focus:outline-none focus:border-[#ff9f43]">
+</div>
+</div>
+</div>
+<div class="pt-2 border-t border-white/5">
+<button onclick="openPlayerStatsInputModal(${m.id})" class="w-full py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[10px] text-gray-300 transition flex items-center justify-center gap-1">
+<i class="fa-solid fa-user-pen"></i> 選手個別スタッツ入力
+</button>
+</div>
+</div>
+`;
+});
+}
+
+function saveQualifierMatchValue(mid) {
+const m = appState.qualifierMatches.find(x => x.id === mid);
+if (!m) return;
+const v1 = document.getElementById(`am-s1-${mid}`).value;
+const v2 = document.getElementById(`am-s2-${mid}`).value;
+const d1 = document.getElementById(`am-d1-${mid}`).value;
+const d2 = document.getElementById(`am-d2-${mid}`).value;
+m.s1 = (v1 === '') ? null : Number(v1);
+m.s2 = (v2 === '') ? null : Number(v2);
+m.ded1 = parseFloat(d1) || 0;
+m.ded2 = parseFloat(d2) || 0;
+saveToStorage();
+}
+
+function openPlayerStatsInputModal(mid) {
+currentEditingMatchId = mid;
+const m = appState.qualifierMatches.find(x => x.id === mid);
+if (!m) return;
+document.getElementById('modal-match-title').innerText = `🛡️ ${m.t1} vs ${m.t2} (スタッツ入力)`;
+const container = document.getElementById('modal-players-container');
+container.innerHTML = '';
+const p1 = appState.teams[m.t1] || [];
+const p2 = appState.teams[m.t2] || [];
+const allPlayers = [...p1, ...p2];
+allPlayers.forEach(pName => {
+const currentStats = m.playerStats[pName] || { points: 0, hits: 0, losses: 0, assists: 0, evaluation: 0 };
+container.innerHTML += `
+<div class="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+<div class="min-w-[120px]">
+<div class="text-xs font-black text-gray-200">${pName}</div>
+<div class="text-[9px] text-purple-400 font-semibold truncate">${p1.includes(pName) ? m.t1 : m.t2}</div>
+</div>
+<div class="grid grid-cols-5 gap-2 w-full sm:w-auto">
+<div>
+<label class="block text-[8px] text-gray-500 text-center">得点</label>
+<input type="number" data-pname="${pName}" data-key="points" value="${currentStats.points}" class="w-full bg-black/50 border border-white/10 rounded-lg text-center px-1 py-1 text-xs text-white">
+</div>
+<div>
+<label class="block text-[8px] text-gray-500 text-center">命中</label>
+<input type="number" data-pname="${pName}" data-key="hits" value="${currentStats.hits}" class="w-full bg-black/50 border border-white/10 rounded-lg text-center px-1 py-1 text-xs text-white">
+</div>
+<div>
+<label class="block text-[8px] text-gray-500 text-center">ロスト</label>
+<input type="number" data-pname="${pName}" data-key="losses" value="${currentStats.losses}" class="w-full bg-black/50 border border-white/10 rounded-lg text-center px-1 py-1 text-xs text-white">
+</div>
+<div>
+<label class="block text-[8px] text-gray-500 text-center">アシスト</label>
+<input type="number" data-pname="${pName}" data-key="assists" value="${currentStats.assists}" class="w-full bg-black/50 border border-white/10 rounded-lg text-center px-1 py-1 text-xs text-white">
+</div>
+<div>
+<label class="block text-[8px] text-purple-400 text-center font-bold">評価★</label>
+<input type="number" step="any" data-pname="${pName}" data-key="evaluation" value="${currentStats.evaluation}" class="w-full bg-purple-950/30 border border-purple-500/20 rounded-lg text-center px-1 py-1 text-xs text-white font-bold">
+</div>
+</div>
+</div>
+`;
+});
+openModal('match-stats-modal');
+}
+
+function savePlayerStatsFromModal() {
+const m = appState.qualifierMatches.find(x => x.id === currentEditingMatchId);
+if (!m) return;
+const inputs = document.querySelectorAll('#modal-players-container input');
+inputs.forEach(ip => {
+const pName = ip.getAttribute('data-pname');
+const key = ip.getAttribute('data-key');
+if (!m.playerStats[pName]) {
+m.playerStats[pName] = { points: 0, hits: 0, losses: 0, assists: 0, evaluation: 0 };
+}
+m.playerStats[pName][key] = parseFloat(ip.value) || 0;
+});
+saveToStorage();
+closeModal('match-stats-modal');
+renderAll();
+showToast('選手スタッツをキャッシュ更新しました');
+}
+
+function renderAdminFinalInputs() {
+const container = document.getElementById('admin-final-inputs-container');
+if (!container) return;
+container.innerHTML = '';
+const f = appState.finalMatches;
+
+function createRow(label, key) {
+const m = f[key];
+return `
+<div class="glass-card bg-black/25 rounded-2xl p-4 border border-white/5 space-y-3 max-w-xl">
+<div class="text-[10px] text-gray-500 font-bold font-mono border-b border-white/5 pb-1">${label}</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<span class="text-xs font-extrabold text-gray-200 truncate block">${m.name1 || '対戦相手決定待ち'}</span>
+<div class="flex gap-2">
+<div class="flex-1">
+<label class="block text-[8px] text-gray-500">スコア</label>
+<input type="number" id="af-s1-${key}" value="${m.s1!==null?m.s1:''}" onchange="saveFinalMatchValue('${key}')" class="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-purple-500">
+</div>
+<div class="flex-1">
+<label class="block text-[8px] text-gray-500">演繹点</label>
+<input type="number" step="any" id="af-d1-${key}" value="${m.d1||0}" onchange="saveFinalMatchValue('${key}')" class="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-purple-500">
+</div>
+</div>
+</div>
+<div class="space-y-1.5">
+<span class="text-xs font-extrabold text-gray-200 truncate block">${m.name2 || '対戦相手決定待ち'}</span>
+<div class="flex gap-2">
+<div class="flex-1">
+<label class="block text-[8px] text-gray-500">スコア</label>
+<input type="number" id="af-s2-${key}" value="${m.s2!==null?m.s2:''}" onchange="saveFinalMatchValue('${key}')" class="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-purple-500">
+</div>
+<div class="flex-1">
+<label class="block text-[8px] text-gray-500">演繹点</label>
+<input type="number" step="any" id="af-d2-${key}" value="${m.d2||0}" onchange="saveFinalMatchValue('${key}')" class="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-purple-500">
+</div>
+</div>
+</div>
+</div>
+</div>
+`;
+}
+
+container.innerHTML += createRow('準々決勝①', 't1');
+container.innerHTML += createRow('準々決勝②', 't2');
+container.innerHTML += createRow('準決勝①', 'semi1');
+container.innerHTML += createRow('準決勝②', 'semi2');
+container.innerHTML += createRow('🏆 決勝戦', 'final1');
+}
+
+function saveFinalMatchValue(key) {
+const f = appState.finalMatches[key];
+if (!f) return;
+const s1 = document.getElementById(`af-s1-${key}`).value;
+const s2 = document.getElementById(`af-s2-${key}`).value;
+const d1 = document.getElementById(`af-d1-${key}`).value;
+const d2 = document.getElementById(`af-d2-${key}`).value;
+f.s1 = (s1 === '') ? null : Number(s1);
+f.s2 = (s2 === '') ? null : Number(s2);
+f.d1 = parseFloat(d1) || 0;
+f.d2 = parseFloat(d2) || 0;
+saveToStorage();
+renderAll();
+}
+
+function renderAdminPlayersTable() {
+const tbody = document.getElementById('admin-players-tbody');
+if (!tbody) return;
+tbody.innerHTML = '';
+let list = computePlayerAverages();
+const searchQ = document.getElementById('admin-player-search').value.toLowerCase().trim();
+if (searchQ) {
+list = list.filter(p => p.name.toLowerCase().includes(searchQ) || p.team.toLowerCase().includes(searchQ));
+}
+list.sort((a, b) => {
+let valA = a[adminPlayerSortKey];
+let valB = b[adminPlayerSortKey];
+if (adminPlayerSortOrder === 'desc') {
+return valB - valA;
+} else {
+return valA - valB;
+}
+});
+
+list.forEach((p, idx) => {
+tbody.innerHTML += `
+<tr class="hover:bg-white/[0.01] transition">
+<td class="py-2 px-2 text-center text-gray-400 font-mono">${idx + 1}</td>
+<td class="py-2 px-2 font-bold text-gray-200">${p.name}</td>
+<td class="py-2 px-2 text-gray-400">${p.team}</td>
+<td class="py-2 px-2 text-center font-mono">${p.totalMatches}</td>
+<td class="py-2 px-2 text-right font-mono">${p.avgPoints}</td>
+<td class="py-2 px-2 text-right font-mono">${p.avgHits}</td>
+<td class="py-2 px-2 text-right font-mono text-rose-400">${p.avgLosses}</td>
+<td class="py-2 px-2 text-right font-mono text-emerald-400">${p.avgAssists}</td>
+<td class="py-2 px-2 text-right font-mono text-purple-400 font-extrabold">${p.avgEvaluation}</td>
+</tr>
+`;
+});
+}
+
+function filterAdminPlayersTable() {
+renderAdminPlayersTable();
+}
+
+function sortAdminPlayers(key) {
+if (adminPlayerSortKey === key) {
+adminPlayerSortOrder = (adminPlayerSortOrder === 'desc') ? 'asc' : 'desc';
+} else {
+adminPlayerSortKey = key;
+adminPlayerSortOrder = 'desc';
+}
+renderAdminPlayersTable();
+}
+
+function renderAll() {
+renderTimetable();
+renderTeams();
+renderQualifierTable();
+renderLeaderboard();
+renderTournamentView();
+renderFinalResults();
+if (isAdminLoggedIn) {
+renderAdminPanel();
+}
+}
+</script>
+</body>
+</html>
+
+```
