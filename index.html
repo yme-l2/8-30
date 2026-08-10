@@ -338,6 +338,7 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <th class="py-2 px-2 text-right cursor-pointer hover:text-white" onclick="sortAdminPlayers('avgHits')">平均命中 <i class="fa-solid fa-sort text-[9px]"></i></th>
 <th class="py-2 px-2 text-right cursor-pointer hover:text-white" onclick="sortAdminPlayers('avgLosses')">平均ロスト <i class="fa-solid fa-sort text-[9px]"></i></th>
 <th class="py-2 px-2 text-right cursor-pointer hover:text-white" onclick="sortAdminPlayers('avgAssists')">平均アシスト <i class="fa-solid fa-sort text-[9px]"></i></th>
+<th class="py-2 px-2 text-right cursor-pointer text-amber-400 hover:text-white" onclick="sortAdminPlayers('avgDed')">平均演繹点 <i class="fa-solid fa-sort text-[9px]"></i></th>
 <th class="py-2 px-2 text-right cursor-pointer text-purple-400 hover:text-white" onclick="sortAdminPlayers('avgEvaluation')">平均評価 ★ <i class="fa-solid fa-sort text-[9px]"></i></th>
 </tr>
 </thead>
@@ -434,7 +435,7 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <i class="fa-solid fa-xmark"></i>
 </button>
 <h3 id="modal-match-title" class="text-md font-bold text-amber-500 mb-1"></h3>
-<p class="text-[10px] text-gray-400 mb-4">この試合における各選手のスタッツを入力してください。</p>
+<p class="text-[10px] text-gray-400 mb-4">この試合における各選手のスタッツ（得点・命中・ロスト・アシスト・演繹点・評価）を入力してください。</p>
 <div id="modal-players-container" class="space-y-4">
 <!-- Dynamically loaded player stats -->
 </div>
@@ -449,7 +450,7 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] space-y-2 pointer-events-none w-[90%] max-w-sm"></div>
 
 <script>
-// Firebase Cloud Configuration (Updated with new hikuhai project)
+// Firebase Cloud Configuration
 const firebaseConfig = {
 apiKey: "AIzaSyCdIPKPd0u6QfR2WS-U9aG6qn2EDMw-zcA",
 authDomain: "hikuhai.firebaseapp.com",
@@ -592,7 +593,7 @@ updatedAt: Date.now()
 console.error("Cloud save failed:", e);
 }
 }
-localStorage.setItem('dodgeball_kansei_v15', JSON.stringify(appState));
+localStorage.setItem('dodgeball_kansei_v16', JSON.stringify(appState));
 }
 
 async function saveToCloud() {
@@ -987,11 +988,13 @@ sumPoints: 0,
 sumHits: 0,
 sumLosses: 0,
 sumAssists: 0,
+sumDed: 0,
 sumEvaluation: 0,
 avgPoints: 0,
 avgHits: 0,
 avgLosses: 0,
 avgAssists: 0,
+avgDed: 0,
 avgEvaluation: 0
 };
 });
@@ -1008,6 +1011,7 @@ playerAverages[pName].sumPoints += Number(ps.points || 0);
 playerAverages[pName].sumHits += Number(ps.hits || 0);
 playerAverages[pName].sumLosses += Number(ps.losses || 0);
 playerAverages[pName].sumAssists += Number(ps.assists || 0);
+playerAverages[pName].sumDed += Number(ps.ded || 0);
 playerAverages[pName].sumEvaluation += Number(ps.evaluation || 0);
 }
 });
@@ -1020,6 +1024,7 @@ p.avgPoints = parseFloat((p.sumPoints / div).toFixed(2));
 p.avgHits = parseFloat((p.sumHits / div).toFixed(2));
 p.avgLosses = parseFloat((p.sumLosses / div).toFixed(2));
 p.avgAssists = parseFloat((p.sumAssists / div).toFixed(2));
+p.avgDed = parseFloat((p.sumDed / div).toFixed(2));
 p.avgEvaluation = parseFloat((p.sumEvaluation / div).toFixed(2));
 });
 return Object.values(playerAverages);
@@ -1056,8 +1061,8 @@ container.innerHTML += `
 <span class="font-black text-purple-400">${p.avgEvaluation}</span>
 </div>
 <div class="flex justify-between border-t border-white/5 pt-1 mt-1 text-[10px] text-gray-400">
+<span>平均演繹点: ${p.avgDed}</span>
 <span>得点: ${p.avgPoints}</span>
-<span>命中: ${p.avgHits}</span>
 </div>
 </div>
 <div class="text-[9px] text-gray-500 text-right mt-1 font-mono">出場試合: ${p.totalMatches}</div>
@@ -1510,14 +1515,14 @@ const p1 = appState.teams[m.t1] || [];
 const p2 = appState.teams[m.t2] || [];
 const allPlayers = [...p1, ...p2];
 allPlayers.forEach(pName => {
-const currentStats = m.playerStats[pName] || { points: 0, hits: 0, losses: 0, assists: 0, evaluation: 0 };
+const currentStats = m.playerStats[pName] || { points: 0, hits: 0, losses: 0, assists: 0, ded: 0, evaluation: 0 };
 container.innerHTML += `
 <div class="bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
 <div class="min-w-[120px]">
 <div class="text-xs font-black text-gray-200">${pName}</div>
 <div class="text-[9px] text-purple-400 font-semibold truncate">${p1.includes(pName) ? m.t1 : m.t2}</div>
 </div>
-<div class="grid grid-cols-5 gap-2 w-full sm:w-auto">
+<div class="grid grid-cols-6 gap-1.5 w-full sm:w-auto">
 <div>
 <label class="block text-[8px] text-gray-500 text-center">得点</label>
 <input type="number" data-pname="${pName}" data-key="points" value="${currentStats.points}" class="w-full bg-black/50 border border-white/10 rounded-lg text-center px-1 py-1 text-xs text-white">
@@ -1533,6 +1538,10 @@ container.innerHTML += `
 <div>
 <label class="block text-[8px] text-gray-500 text-center">アシスト</label>
 <input type="number" data-pname="${pName}" data-key="assists" value="${currentStats.assists}" class="w-full bg-black/50 border border-white/10 rounded-lg text-center px-1 py-1 text-xs text-white">
+</div>
+<div>
+<label class="block text-[8px] text-amber-400 text-center font-bold">演繹点</label>
+<input type="number" step="any" data-pname="${pName}" data-key="ded" value="${currentStats.ded || 0}" class="w-full bg-amber-950/30 border border-amber-500/20 rounded-lg text-center px-1 py-1 text-xs text-white font-bold">
 </div>
 <div>
 <label class="block text-[8px] text-purple-400 text-center font-bold">評価★</label>
@@ -1553,14 +1562,14 @@ inputs.forEach(ip => {
 const pName = ip.getAttribute('data-pname');
 const key = ip.getAttribute('data-key');
 if (!m.playerStats[pName]) {
-m.playerStats[pName] = { points: 0, hits: 0, losses: 0, assists: 0, evaluation: 0 };
+m.playerStats[pName] = { points: 0, hits: 0, losses: 0, assists: 0, ded: 0, evaluation: 0 };
 }
 m.playerStats[pName][key] = parseFloat(ip.value) || 0;
 });
 saveToStorage();
 closeModal('match-stats-modal');
 renderAll();
-showToast('選手スタッツをクラウドに同期保存しました');
+showToast('選手スタッツと演繹点をクラウドに同期保存しました');
 }
 
 function renderAdminFinalInputs() {
@@ -1658,6 +1667,7 @@ tbody.innerHTML += `
 <td class="py-2 px-2 text-right font-mono">${p.avgHits}</td>
 <td class="py-2 px-2 text-right font-mono text-rose-400">${p.avgLosses}</td>
 <td class="py-2 px-2 text-right font-mono text-emerald-400">${p.avgAssists}</td>
+<td class="py-2 px-2 text-right font-mono text-amber-400 font-semibold">${p.avgDed}</td>
 <td class="py-2 px-2 text-right font-mono text-purple-400 font-extrabold">${p.avgEvaluation}</td>
 </tr>
 `;
