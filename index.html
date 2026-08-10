@@ -449,15 +449,15 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] space-y-2 pointer-events-none w-[90%] max-w-sm"></div>
 
 <script>
-// Firebase Cloud Configuration (CDNグローバル版)
+// Firebase Cloud Configuration (Updated with new hikuhai project)
 const firebaseConfig = {
-apiKey: "AIzaSyD-N-B_WL3pJFsgI5HkNEzarUn1piO4m8w",
-authDomain: "hikyuhai.firebaseapp.com",
-projectId: "hikyuhai",
-storageBucket: "hikyuhai.firebasestorage.app",
-messagingSenderId: "361222105744",
-appId: "1:361222105744:web:33e40e12063c8499d10615",
-measurementId: "G-LVDEW3HXBQ"
+apiKey: "AIzaSyCdIPKPd0u6QfR2WS-U9aG6qn2EDMw-zcA",
+authDomain: "hikuhai.firebaseapp.com",
+projectId: "hikuhai",
+storageBucket: "hikuhai.firebasestorage.app",
+messagingSenderId: "1083627443029",
+appId: "1:1083627443029:web:bf43ce2155414c1b7955dc",
+measurementId: "G-LT234RSS37"
 };
 
 const appId = 'hikyuhai-official-cup-2026';
@@ -592,7 +592,7 @@ updatedAt: Date.now()
 console.error("Cloud save failed:", e);
 }
 }
-localStorage.setItem('dodgeball_kansei_v14', JSON.stringify(appState));
+localStorage.setItem('dodgeball_kansei_v15', JSON.stringify(appState));
 }
 
 async function saveToCloud() {
