@@ -10,15 +10,10 @@
 <link href="https://fonts.googleapis.com/css?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <!-- FontAwesome Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- Firebase SDKs -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-// Global Firebase references accessible by application scripts
-window.firebaseModules = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, onSnapshot };
-</script>
+<!-- Firebase SDKs (グローバルCDN版) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
 :root {
 --bg-gradient: linear-gradient(135deg, #0d0614, #120920, #06020b);
@@ -64,7 +59,7 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.05)_0%,transparent_75%)] pointer-events-none"></div>
 <div class="relative z-10 max-w-4xl mx-auto px-4">
 <div class="text-xs tracking-widest text-[#ff9f43] font-bold uppercase mb-1.5">
-<i class="fa-solid fa-trophy"></i> 避球杯オフィシャル運営管理システム (クラウド同期版)
+<i class="fa-solid fa-trophy"></i> 避球杯オフィシャル運営管理システム (オンライン同期版)
 </div>
 <h1 class="text-4xl md:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-400 to-purple-400 mb-3">
 避球杯
@@ -454,23 +449,21 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] space-y-2 pointer-events-none w-[90%] max-w-sm"></div>
 
 <script>
-// Firebase Cloud Configuration
-const apiKey = "";
+// Firebase Cloud Configuration (CDNグローバル版)
 const firebaseConfig = {
-apiKey: "AIzaSyD-Placeholder-KeyForCanvasEnvironment",
-authDomain: "dodgeball-cup-sync.firebaseapp.com",
-projectId: "dodgeball-cup-sync",
-storageBucket: "dodgeball-cup-sync.appspot.com",
-messagingSenderId: "1234567890",
-appId: "1:1234567890:web:abcdef"
+apiKey: "AIzaSyD-N-B_WL3pJFsgI5HkNEzarUn1piO4m8w",
+authDomain: "hikyuhai.firebaseapp.com",
+projectId: "hikyuhai",
+storageBucket: "hikyuhai.firebasestorage.app",
+messagingSenderId: "361222105744",
+appId: "1:361222105744:web:33e40e12063c8499d10615",
+measurementId: "G-LVDEW3HXBQ"
 };
 
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'dodgeball-kansei-cup-2026';
+const appId = 'hikyuhai-official-cup-2026';
 
 let db = null;
 let auth = null;
-let currentUser = null;
-let isCloudLoaded = false;
 
 // System model state
 let appState = {
@@ -547,74 +540,65 @@ setupSchedule();
 initFirebaseSync();
 };
 
-// Initialize Firebase and Realtime Cloud Firestore Sync (RULE 1, RULE 3)
-async function initFirebaseSync() {
+function initFirebaseSync() {
 try {
-const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
+firebase.initializeApp(firebaseConfig);
+auth = firebase.auth();
+db = firebase.firestore();
 
-// Fallback config if real project config isn't injected yet
-const activeConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
-const app = initializeApp(activeConfig);
-auth = getAuth(app);
-db = getFirestore(app);
-
-if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-// Auth token available
-} else {
-await signInAnonymously(auth);
-}
-
-onAuthStateChanged(auth, (user) => {
-currentUser = user;
-if (user) {
+auth.signInAnonymously().then(() => {
 document.getElementById('sync-status-dot').className = "inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse";
 document.getElementById('header-schedule-badge').innerText = "クラウド同期中 (リアルタイム)";
 
-// Subscribe to public synchronized tournament data (RULE 1)
-const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tournament_state');
-onSnapshot(docRef, (docSnap) => {
-if (docSnap.exists()) {
+// Cloud Firestore Realtime Sync Listener
+db.collection('artifacts').doc(appId).collection('public').doc('tournament_state').onSnapshot((docSnap) => {
+if (docSnap.exists) {
 const cloudData = docSnap.data();
 if (cloudData && cloudData.state) {
 appState = cloudData.state;
 renderAll();
 }
 } else {
-// First time initialization on cloud
 saveToCloud();
 }
 }, (error) => {
 console.error("Firestore sync error:", error);
 });
-}
+}).catch(err => {
+console.warn("Auth failed:", err);
+fallbackLocal();
 });
+
 } catch (err) {
-console.warn("Firebase offline mode / Fallback to local storage", err);
+console.warn("Firebase init failed:", err);
+fallbackLocal();
+}
+}
+
+function fallbackLocal() {
 document.getElementById('sync-status-dot').className = "inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse";
 document.getElementById('header-schedule-badge').innerText = "ローカルモード (オフライン)";
 renderAll();
 }
-}
 
-// Save state to cloud and local storage simultaneously
 async function saveToStorage() {
-if (db && currentUser) {
+if (db && auth && auth.currentUser) {
 try {
-const { doc, setDoc } = window.firebaseModules;
-const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tournament_state');
-await setDoc(docRef, { state: appState, updatedAt: Date.now() });
+await db.collection('artifacts').doc(appId).collection('public').doc('tournament_state').set({
+state: appState,
+updatedAt: Date.now()
+});
 } catch (e) {
 console.error("Cloud save failed:", e);
 }
 }
-localStorage.setItem('dodgeball_kansei_v12', JSON.stringify(appState));
+localStorage.setItem('dodgeball_kansei_v14', JSON.stringify(appState));
 }
 
 async function saveToCloud() {
 await saveToStorage();
 }
 
-// Reset functions
 function resetScoresOnly() {
 if (confirm('登録されているチーム・メンバーはそのまま残し、入力したすべての試合スコアや個人スタッツをリセットしますか？')) {
 setupSchedule();
@@ -643,9 +627,8 @@ showToast(`${targetBlock}ブロックのスコアをリセットしました！`
 }
 
 function setupSchedule() {
-appState.qualifierMatches = [];
+if (appState.qualifierMatches.length > 0) return;
 let idCounter = 0;
-
 const matchesA = [
 [[0, 6], [1, 5], [2, 4]],
 [[3, 4], [5, 6], [0, 1]],
@@ -655,7 +638,6 @@ const matchesA = [
 [[6, 2], [5, 3], [4, 0]],
 [[1, 6], [2, 3], [5, 4]]
 ];
-
 const matchesB = [
 [[0, 6], [1, 5], [2, 4]],
 [[3, 4], [5, 6], [0, 1]],
@@ -1343,7 +1325,7 @@ else appState.blocks.B.push(key);
 setupSchedule();
 saveToStorage();
 renderAll();
-showToast('チームとメンバー情報が更新されました！');
+showToast('チーム情報が更新されました！');
 }
 
 function renderBlockAllocator() {
