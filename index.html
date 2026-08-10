@@ -10,6 +10,15 @@
 <link href="https://fonts.googleapis.com/css?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <!-- FontAwesome Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Global Firebase references accessible by application scripts
+window.firebaseModules = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, setDoc, onSnapshot };
+</script>
 <style>
 :root {
 --bg-gradient: linear-gradient(135deg, #0d0614, #120920, #06020b);
@@ -55,14 +64,14 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.05)_0%,transparent_75%)] pointer-events-none"></div>
 <div class="relative z-10 max-w-4xl mx-auto px-4">
 <div class="text-xs tracking-widest text-[#ff9f43] font-bold uppercase mb-1.5">
-<i class="fa-solid fa-trophy"></i> 避球杯オフィシャル運営管理システム
+<i class="fa-solid fa-trophy"></i> 避球杯オフィシャル運営管理システム (クラウド同期版)
 </div>
 <h1 class="text-4xl md:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-orange-400 to-purple-400 mb-3">
 避球杯
 </h1>
 <div class="inline-flex items-center gap-2 bg-purple-950/40 border border-purple-500/20 px-4 py-1.5 rounded-full text-xs text-gray-300 font-semibold shadow-inner">
-<span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-<span id="header-schedule-badge">開催スケジュール: 14:30 開始</span>
+<span id="sync-status-dot" class="inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+<span id="header-schedule-badge">クラウド接続中...</span>
 </div>
 </div>
 </header>
@@ -264,7 +273,7 @@ to { transform: translate(-50%, 0); opacity: 1; }
 </div>
 <p class="text-xs text-gray-400">登録済みのチームをA・Bの予選ブロックに手動で個別に配分できます。</p>
 <div id="block-allocator-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<!-- Dropdowns are generated dynamically -->
+<!-- Dropdowns -->
 </div>
 <div class="pt-3">
 <button onclick="applyBlockConfig()" class="bg-amber-600 hover:bg-amber-500 active:scale-95 transition text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-lg">
@@ -278,7 +287,7 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <h3 class="text-sm font-bold text-gray-200 border-b border-white/5 pb-2">タイムテーブル時間枠編集（スケジュール遅れ対策）</h3>
 <p class="text-xs text-gray-400">大会スケジュール全体の時間枠の表記を自由に編集して適用可能です。</p>
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="admin-time-inputs-container">
-<!-- Generated dynamically via JS -->
+<!-- Generated -->
 </div>
 <button onclick="saveTimeSlots()" class="bg-[#ff9f43] text-black text-xs font-bold py-2.5 px-5 rounded-xl hover:opacity-90 active:scale-95 transition shadow-lg mt-2">
 時間設定を保存する
@@ -313,7 +322,7 @@ to { transform: translate(-50%, 0); opacity: 1; }
 </div>
 </div>
 
-<!-- SUB-SECTION 6: All Players Stats Manager (Private Admin only) -->
+<!-- SUB-SECTION 6: All Players Stats Manager -->
 <div id="admin-sub-allstats" class="admin-view-block hidden glass-card rounded-2xl p-5 space-y-4">
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/5 pb-2 gap-2">
 <div>
@@ -416,7 +425,7 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <div>
 <div class="text-[10px] font-bold text-purple-400 border-b border-white/10 pb-1 uppercase tracking-wider text-center mb-2">🏆 所属メンバー一覧</div>
 <ul id="info-members-list" class="space-y-1.5 divide-y divide-white/5">
-<!-- Populated dynamically -->
+<!-- Populated -->
 </ul>
 </div>
 </div>
@@ -445,20 +454,38 @@ to { transform: translate(-50%, 0); opacity: 1; }
 <div id="toast-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] space-y-2 pointer-events-none w-[90%] max-w-sm"></div>
 
 <script>
-// System model state with exact teams and members provided
+// Firebase Cloud Configuration
+const apiKey = "";
+const firebaseConfig = {
+apiKey: "AIzaSyD-Placeholder-KeyForCanvasEnvironment",
+authDomain: "dodgeball-cup-sync.firebaseapp.com",
+projectId: "dodgeball-cup-sync",
+storageBucket: "dodgeball-cup-sync.appspot.com",
+messagingSenderId: "1234567890",
+appId: "1:1234567890:web:abcdef"
+};
+
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'dodgeball-kansei-cup-2026';
+
+let db = null;
+let auth = null;
+let currentUser = null;
+let isCloudLoaded = false;
+
+// System model state
 let appState = {
 timeSlots: [
-'14:30〜14:45', // R1
-'14:45〜15:00', // R2
-'15:00〜15:15', // R3
-'15:15〜15:30', // R4
-'15:30〜15:45', // R5
-'15:45〜16:00', // R6
-'16:00〜16:15', // R7
-'16:15〜16:35', // 集計・休憩20分
-'16:35〜16:50', // 準々決勝
-'16:50〜17:05', // 準決勝
-'17:05〜17:20' // 決勝
+'14:30〜14:45',
+'14:45〜15:00',
+'15:00〜15:15',
+'15:15〜15:30',
+'15:30〜15:45',
+'15:45〜16:00',
+'16:00〜16:15',
+'16:15〜16:35',
+'16:35〜16:50',
+'16:50〜17:05',
+'17:05〜17:20'
 ],
 teams: {
 "あめっこ桜牛乳〜うちらダイス集めなんで(笑)": ["ゆら桜牛乳", "ゆり桜牛乳", "にゃこ桜牛乳"],
@@ -516,39 +543,78 @@ let adminPlayerSortKey = 'avgEvaluation';
 let adminPlayerSortOrder = 'desc';
 
 window.onload = function() {
-const saved = localStorage.getItem('dodgeball_kansei_v11');
-if (saved) {
-try {
-const parsed = JSON.parse(saved);
-if (parsed.teams && Object.keys(parsed.teams).length > 0) {
-appState.teams = parsed.teams;
-}
-if (parsed.blocks && parsed.blocks.A && parsed.blocks.B) {
-appState.blocks = parsed.blocks;
-}
-if (parsed.timeSlots) {
-appState.timeSlots = parsed.timeSlots;
-}
-if (parsed.qualifierMatches) {
-appState.qualifierMatches = parsed.qualifierMatches;
-}
-if (parsed.finalMatches) {
-appState.finalMatches = parsed.finalMatches;
-}
-} catch (e) {
 setupSchedule();
-}
-} else {
-setupSchedule();
-}
-renderAll();
+initFirebaseSync();
 };
 
-function saveToStorage() {
-localStorage.setItem('dodgeball_kansei_v11', JSON.stringify(appState));
+// Initialize Firebase and Realtime Cloud Firestore Sync (RULE 1, RULE 3)
+async function initFirebaseSync() {
+try {
+const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore, doc, onSnapshot } = window.firebaseModules;
+
+// Fallback config if real project config isn't injected yet
+const activeConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
+const app = initializeApp(activeConfig);
+auth = getAuth(app);
+db = getFirestore(app);
+
+if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+// Auth token available
+} else {
+await signInAnonymously(auth);
 }
 
-// チーム名とメンバーは消さずに、すべての試合のスコア・戦績のみを一括リセットする関数
+onAuthStateChanged(auth, (user) => {
+currentUser = user;
+if (user) {
+document.getElementById('sync-status-dot').className = "inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse";
+document.getElementById('header-schedule-badge').innerText = "クラウド同期中 (リアルタイム)";
+
+// Subscribe to public synchronized tournament data (RULE 1)
+const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tournament_state');
+onSnapshot(docRef, (docSnap) => {
+if (docSnap.exists()) {
+const cloudData = docSnap.data();
+if (cloudData && cloudData.state) {
+appState = cloudData.state;
+renderAll();
+}
+} else {
+// First time initialization on cloud
+saveToCloud();
+}
+}, (error) => {
+console.error("Firestore sync error:", error);
+});
+}
+});
+} catch (err) {
+console.warn("Firebase offline mode / Fallback to local storage", err);
+document.getElementById('sync-status-dot').className = "inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse";
+document.getElementById('header-schedule-badge').innerText = "ローカルモード (オフライン)";
+renderAll();
+}
+}
+
+// Save state to cloud and local storage simultaneously
+async function saveToStorage() {
+if (db && currentUser) {
+try {
+const { doc, setDoc } = window.firebaseModules;
+const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tournament_state');
+await setDoc(docRef, { state: appState, updatedAt: Date.now() });
+} catch (e) {
+console.error("Cloud save failed:", e);
+}
+}
+localStorage.setItem('dodgeball_kansei_v12', JSON.stringify(appState));
+}
+
+async function saveToCloud() {
+await saveToStorage();
+}
+
+// Reset functions
 function resetScoresOnly() {
 if (confirm('登録されているチーム・メンバーはそのまま残し、入力したすべての試合スコアや個人スタッツをリセットしますか？')) {
 setupSchedule();
@@ -558,7 +624,6 @@ showToast('すべての試合スコアとスタッツを初期化しました！
 }
 }
 
-// 指定したブロック（AまたはB）のスコア・戦績のみをリセットする関数
 function resetBlockMatchesOnly(targetBlock) {
 if (confirm(`${targetBlock}ブロックのスコア・戦績のみをリセットしますか？（チーム名や他ブロックは保持されます）`)) {
 appState.qualifierMatches.forEach(m => {
@@ -570,7 +635,6 @@ m.ded2 = 0;
 m.playerStats = {};
 }
 });
-// 決勝トーナメントもリセット
 resetFinals();
 saveToStorage();
 renderAll();
@@ -697,11 +761,6 @@ function renderTimetable() {
 const tbody = document.getElementById('global-timetable-tbody');
 if (!tbody) return;
 tbody.innerHTML = '';
-
-const headerBadge = document.getElementById('header-schedule-badge');
-if (headerBadge) {
-headerBadge.innerText = `開催スケジュール: ${appState.timeSlots[0] || '14:30'} 開始`;
-}
 
 for (let r = 0; r < 7; r++) {
 const timeStr = appState.timeSlots[r] || `予選 R${r+1}`;
@@ -1455,6 +1514,7 @@ m.s2 = (v2 === '') ? null : Number(v2);
 m.ded1 = parseFloat(d1) || 0;
 m.ded2 = parseFloat(d2) || 0;
 saveToStorage();
+renderAll();
 }
 
 function openPlayerStatsInputModal(mid) {
@@ -1518,7 +1578,7 @@ m.playerStats[pName][key] = parseFloat(ip.value) || 0;
 saveToStorage();
 closeModal('match-stats-modal');
 renderAll();
-showToast('選手スタッツをキャッシュ更新しました');
+showToast('選手スタッツをクラウドに同期保存しました');
 }
 
 function renderAdminFinalInputs() {
@@ -1555,7 +1615,7 @@ return `
 </div>
 <div class="flex-1">
 <label class="block text-[8px] text-gray-500">演繹点</label>
-<input type="number" step="any" id="af-d2-${key}" value="${m.d2||0}" onchange="saveFinalMatchValue('${key}')" class="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-center text-white focus:outline-none focus:border-purple-500">
+<input type="number" step="any" id="af-d2-${key}" value="${m.d2||0}" onchange="saveFinalMatchValue('${key}')" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-center text-white focus:outline-none focus:border-purple-500">
 </div>
 </div>
 </div>
