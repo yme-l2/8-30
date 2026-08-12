@@ -635,27 +635,20 @@ showToast(`${targetBlock}ブロックのスコアをリセットしました！`
 function setupSchedule() {
 if (appState.qualifierMatches.length > 0) return;
 let idCounter = 0;
-const matchesA = [
-[[0, 6], [1, 5], [2, 4]],
-[[3, 4], [5, 6], [0, 1]],
-[[1, 2], [3, 6], [5, 0]],
-[[4, 6], [1, 0], [2, 3]],
-[[5, 2], [4, 1], [0, 3]],
-[[6, 2], [5, 3], [4, 0]],
-[[1, 6], [2, 3], [5, 4]]
-];
-const matchesB = [
-[[0, 6], [1, 5], [2, 4]],
-[[3, 4], [5, 6], [0, 1]],
-[[1, 2], [3, 6], [5, 0]],
-[[4, 6], [1, 3], [0, 2]],
-[[5, 2], [4, 1], [0, 3]],
-[[6, 2], [5, 3], [4, 0]],
-[[1, 6], [2, 3], [5, 4]]
+
+// Correct Round-Robin algorithm for 7 teams (7 rounds, 3 matches each)
+const roundPairs = [
+[[1, 6], [2, 5], [3, 4]], // R1 (0 rests)
+[[0, 5], [1, 4], [2, 3]], // R2 (6 rests)
+[[0, 3], [1, 2], [4, 6]], // R3 (5 rests)
+[[0, 1], [2, 6], [3, 5]], // R4 (4 rests)
+[[0, 6], [1, 5], [2, 4]], // R5 (3 rests)
+[[0, 4], [1, 3], [5, 6]], // R6 (2 rests)
+[[0, 2], [3, 6], [4, 5]] // R7 (1 rests)
 ];
 
 for (let r = 0; r < 7; r++) {
-matchesA[r].forEach(pair => {
+roundPairs[r].forEach(pair => {
 appState.qualifierMatches.push({
 id: idCounter++,
 round: r,
@@ -669,7 +662,7 @@ ded2: 0,
 playerStats: {}
 });
 });
-matchesB[r].forEach(pair => {
+roundPairs[r].forEach(pair => {
 appState.qualifierMatches.push({
 id: idCounter++,
 round: r,
